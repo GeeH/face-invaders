@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { HEIGHT, WIDTH } from './config';
+import BootScene from './scenes/BootScene';
 import GameScene from './scenes/GameScene';
 
 const parent = document.getElementById('game');
@@ -15,8 +16,11 @@ new Phaser.Game({
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH,
     },
-    scene: [GameScene],
+    scene: [BootScene, GameScene],
     callbacks: {
-        preBoot: (game) => game.registry.set('streamer', parent.dataset.streamer),
+        preBoot: (game) => {
+            game.registry.set('streamer', parent.dataset.streamer);
+            game.registry.set('runUrl', parent.dataset.runUrl);
+        },
     },
 });

@@ -8,7 +8,10 @@ use Illuminate\Support\Facades\Route;
 Route::view('/', 'home')->name('home');
 
 // The game, loaded by OBS as a browser source. The token identifies the streamer.
-Route::get('/play/{token}', PlayController::class)->name('play');
+Route::get('/play/{token}', [PlayController::class, 'show'])->name('play');
+Route::get('/play/{token}/run', [PlayController::class, 'run'])
+    ->middleware('throttle:game-run')
+    ->name('play.run');
 
 Route::middleware('guest')->group(function () {
     Route::get('/auth/twitch/redirect', [TwitchController::class, 'redirect'])->name('login');
