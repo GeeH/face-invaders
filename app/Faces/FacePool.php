@@ -11,6 +11,15 @@ use App\Models\User;
  */
 class FacePool
 {
+    /**
+     * Stock faces not yet handed out in this pool, refilled and reshuffled when empty.
+     *
+     * @var list<Face>
+     */
+    private array $deck = [];
+
+    private int $round = 0;
+
     public function __construct(private StockFaces $stock) {}
 
     /**
@@ -18,6 +27,9 @@ class FacePool
      */
     public function for(User $streamer, int $size): array
     {
+        $this->deck = [];
+        $this->round = 0;
+
         $faces = $streamer->followers()
             ->inRandomOrder()
             ->limit($size)
@@ -26,38 +38,41 @@ class FacePool
                 providerUserId: $follower->provider_user_id,
                 username: $follower->username,
                 displayName: $follower->display_name,
-                avatarUrl: $follower->avatar_url ?? $this->stock->avatarFor($follower->provider_user_id),
+                // Followers without an avatar keep their name but borrow an alien, dealt
+                // from the same deck as the stock faces so a run's aliens stay varied.
+                avatarUrl: $follower->avatar_url ?? $this->deal()->avatarUrl,
                 followedAt: $follower->followed_at?->toImmutable(),
             ))
             ->all();
 
-        return [...$faces, ...$this->stockFaces($size - count($faces))];
+        $stock = [];
+        while (count($faces) + count($stock) < $size) {
+            $stock[] = $this->deal();
+        }
+
+        return [...$faces, ...$stock];
     }
 
     /**
-     * Shuffled stock faces, going round again if more are needed than exist.
-     *
-     * @return list<Face>
+     * The next stock face from a shuffled deck, so every alien is used once
+     * before any repeats. Repeats get a suffixed ID so IDs stay unique.
      */
-    private function stockFaces(int $count): array
+    private function deal(): Face
     {
-        $faces = [];
-
-        for ($round = 1; count($faces) < $count; $round++) {
-            $stock = $this->stock->all();
-            shuffle($stock);
-
-            foreach (array_slice($stock, 0, $count - count($faces)) as $face) {
-                $faces[] = $round === 1 ? $face : new Face(
-                    providerUserId: "{$face->providerUserId}-{$round}",
-                    username: $face->username,
-                    displayName: $face->displayName,
-                    avatarUrl: $face->avatarUrl,
-                    followedAt: null,
-                );
-            }
+        if ($this->deck === []) {
+            $this->deck = $this->stock->all();
+            shuffle($this->deck);
+            $this->round++;
         }
 
-        return $faces;
+        $face = array_pop($this->deck);
+
+        return $this->round === 1 ? $face : new Face(
+            providerUserId: "{$face->providerUserId}-{$this->round}",
+            username: $face->username,
+            displayName: $face->displayName,
+            avatarUrl: $face->avatarUrl,
+            followedAt: null,
+        );
     }
 }

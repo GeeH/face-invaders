@@ -20,6 +20,11 @@ class TwitchFaceProvider implements FaceProvider
 {
     private const PAGE_SIZE = 100;
 
+    /**
+     * Twitch's placeholder avatars (a silhouette on a coloured background) live under this path.
+     */
+    private const DEFAULT_AVATAR_PATH = '/user-default-pictures';
+
     public function __construct(private Helix $helix) {}
 
     public function name(): string
@@ -60,7 +65,8 @@ class TwitchFaceProvider implements FaceProvider
 
     /**
      * Avatar URLs keyed by user ID. Users who have since deleted their account
-     * are missing from the response, so they end up with no avatar.
+     * are missing from the response, and users still on Twitch's placeholder
+     * avatar are left out on purpose, so both get a stock alien instead.
      *
      * @param  list<string>  $userIds
      * @return array<string, string>
@@ -76,6 +82,9 @@ class TwitchFaceProvider implements FaceProvider
 
         $users = $this->helix->as($streamer)->get("users?{$query}")->json('data', []);
 
-        return array_column($users, 'profile_image_url', 'id');
+        return array_filter(
+            array_column($users, 'profile_image_url', 'id'),
+            fn (?string $url) => $url && ! str_contains($url, self::DEFAULT_AVATAR_PATH),
+        );
     }
 }
