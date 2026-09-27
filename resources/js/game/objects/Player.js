@@ -1,7 +1,6 @@
 import Phaser from 'phaser';
 import { PLAYER_SHIPS } from '../assets';
-import { TURRET_TURN_SPEED } from '../config';
-import { aimAt, nearest, shotInterval } from '../targeting';
+import { aimAt, nearest, shotInterval, turnRate } from '../targeting';
 
 // Only fire once the ship is roughly facing its target.
 const AIM_TOLERANCE = 0.2;
@@ -11,12 +10,14 @@ const AIM_TOLERANCE = 0.2;
  * and fires automatically. A random ship is picked each run for variety.
  */
 export default class Player {
-    constructor(scene, x, y, { fireRate, bullets }) {
+    constructor(scene, x, y, { fireRate, turnSpeed, bullets }) {
         this.scene = scene;
         this.x = x;
         this.y = y;
         this.bullets = bullets;
         this.fireRate = fireRate;
+        // Degrees per second; upgrades raise it.
+        this.turnSpeed = turnSpeed;
         this.nextShotAt = 0;
 
         this.ship = scene.add.image(x, y, Phaser.Utils.Array.GetRandom(PLAYER_SHIPS)).setScale(1.2).setDepth(10);
@@ -31,7 +32,7 @@ export default class Player {
         }
 
         const wanted = aimAt(this, target);
-        this.ship.rotation = Phaser.Math.Angle.RotateTo(this.ship.rotation, wanted, TURRET_TURN_SPEED * delta);
+        this.ship.rotation = Phaser.Math.Angle.RotateTo(this.ship.rotation, wanted, turnRate(this.turnSpeed) * delta);
 
         const onTarget = Math.abs(Phaser.Math.Angle.Wrap(wanted - this.ship.rotation)) < AIM_TOLERANCE;
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { aimAt, nearest, shotInterval } from './targeting';
+import { aimAt, nearest, shotInterval, turnRate } from './targeting';
 
 describe('nearest', () => {
     it('picks the closest target', () => {
@@ -27,6 +27,13 @@ describe('aimAt', () => {
 
     it('points down at a target below', () => {
         expect(aimAt(centre, { x: 0, y: 10 })).toBeCloseTo(Math.PI);
+    });
+});
+
+describe('turnRate', () => {
+    it('turns degrees per second into radians per millisecond', () => {
+        expect(turnRate(180)).toBeCloseTo(Math.PI / 1000);
+        expect(turnRate(360) * 1000).toBeCloseTo(Math.PI * 2);
     });
 });
 
