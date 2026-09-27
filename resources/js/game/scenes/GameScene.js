@@ -5,9 +5,10 @@ import Bullet from '../objects/Bullet';
 import Enemy from '../objects/Enemy';
 import Player from '../objects/Player';
 import { RunState } from '../state';
+import { applyUpgrade, upgrades } from '../upgrades';
 import { Waves } from '../waves';
 
-// Pause between waves until the chat vote replaces it (#17, #18).
+// Pause between waves until the chat vote replaces it (#18).
 const BREAK_BETWEEN_WAVES_MS = 3000;
 
 // How long "Game over" shows before a new run starts.
@@ -20,6 +21,7 @@ export default class GameScene extends Phaser.Scene {
 
     create() {
         const { balance, faces } = this.registry.get('run');
+        this.balance = balance;
         this.faces = new FaceQueue(faces);
         this.state = new RunState({ startingHealth: balance.starting_health });
         this.syncHud();
@@ -75,6 +77,7 @@ export default class GameScene extends Phaser.Scene {
                 this.state.waveCleared();
                 this.syncHud();
                 this.banner(`Wave ${wave} cleared!`);
+                this.time.delayedCall(BREAK_BETWEEN_WAVES_MS / 2, () => this.chooseUpgrade());
                 this.time.delayedCall(BREAK_BETWEEN_WAVES_MS, () => this.waves.next());
             },
         });
@@ -91,6 +94,23 @@ export default class GameScene extends Phaser.Scene {
 
         this.player.update(time, delta, enemies);
         this.waves.update(delta, enemies.length);
+    }
+
+    /**
+     * Pick an upgrade between waves. For now one of the drawn options is
+     * chosen at random; the vote (#18, #24) will let chat choose.
+     */
+    chooseUpgrade() {
+        const options = upgrades.draw(this.balance.upgrade_options_per_vote);
+        const upgrade = Phaser.Utils.Array.GetRandom(options);
+
+        this.applyUpgrade(upgrade);
+    }
+
+    applyUpgrade(upgrade) {
+        applyUpgrade(upgrade, { player: this.player, state: this.state, balance: this.balance });
+        this.syncHud();
+        this.banner(`${upgrade.name}\n${upgrade.describe(this.balance)}`, 1200, HEIGHT / 2 + 220);
     }
 
     damagePlayer() {
@@ -156,9 +176,9 @@ export default class GameScene extends Phaser.Scene {
     /**
      * A big message in the middle of the screen that fades away.
      */
-    banner(message, holdMs = 1200) {
+    banner(message, holdMs = 1200, y = HEIGHT / 2 - 200) {
         const text = this.add
-            .text(WIDTH / 2, HEIGHT / 2 - 200, message, {
+            .text(WIDTH / 2, y, message, {
                 fontFamily: 'system-ui, sans-serif',
                 fontSize: '80px',
                 fontStyle: 'bold',
