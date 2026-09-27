@@ -3,12 +3,17 @@ import { HEIGHT, WIDTH } from './config';
 import BootScene from './scenes/BootScene';
 import GameScene from './scenes/GameScene';
 import HudScene from './scenes/HudScene';
+import VoteScene from './scenes/VoteScene';
 
 const parent = document.getElementById('game');
 
 // Add ?debug to the game URL to see physics hitboxes. It also drives the game loop with
 // timers instead of requestAnimationFrame, so it keeps running in headless browsers.
-const debug = new URLSearchParams(window.location.search).has('debug');
+const params = new URLSearchParams(window.location.search);
+const debug = params.has('debug');
+
+// ?local-vote lets keys 1–N pick the upgrade (for development and demos);
+// ?vote-seconds=N shortens the voting window while testing.
 
 const game = new Phaser.Game({
     type: Phaser.AUTO,
@@ -26,11 +31,13 @@ const game = new Phaser.Game({
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH,
     },
-    scene: [BootScene, GameScene, HudScene],
+    scene: [BootScene, GameScene, HudScene, VoteScene],
     callbacks: {
         preBoot: (game) => {
             game.registry.set('streamer', parent.dataset.streamer);
             game.registry.set('runUrl', parent.dataset.runUrl);
+            game.registry.set('localVote', debug || params.has('local-vote'));
+            game.registry.set('voteSeconds', Number(params.get('vote-seconds')) || null);
         },
     },
 });

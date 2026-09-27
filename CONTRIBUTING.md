@@ -55,7 +55,13 @@ Tests run against an in-memory SQLite database, so they don't touch your dev dat
 
 ### Debugging the game
 
-Add `?debug` to your game URL to see physics hitboxes. It also exposes the game as `window.faceInvaders` in the browser console.
+Add these to your game URL (combine them with `&`):
+
+| Parameter | What it does |
+| --- | --- |
+| `?debug` | Shows physics hitboxes, exposes the game as `window.faceInvaders` in the console, and turns on `local-vote` |
+| `?local-vote` | Lets you pick the between-waves upgrade by pressing 1–3 |
+| `?vote-seconds=5` | Shortens the voting window (the default is the streamer's setting, 30 s) |
 
 ## Branches and pull requests
 

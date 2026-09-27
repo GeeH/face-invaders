@@ -8,8 +8,9 @@ import { RunState } from '../state';
 import { applyUpgrade, upgrades } from '../upgrades';
 import { Waves } from '../waves';
 
-// Pause between waves until the chat vote replaces it (#18).
-const BREAK_BETWEEN_WAVES_MS = 3000;
+// Moments between a wave clearing, the vote, and the next wave.
+const BEFORE_VOTE_MS = 1500;
+const AFTER_UPGRADE_MS = 2000;
 
 // How long "Game over" shows before a new run starts.
 const GAME_OVER_MS = 5000;
@@ -20,8 +21,9 @@ export default class GameScene extends Phaser.Scene {
     }
 
     create() {
-        const { balance, faces } = this.registry.get('run');
+        const { balance, faces, streamer } = this.registry.get('run');
         this.balance = balance;
+        this.voteSeconds = this.registry.get('voteSeconds') ?? streamer.voting_window_seconds;
         this.faces = new FaceQueue(faces);
         this.state = new RunState({ startingHealth: balance.starting_health });
         this.syncHud();
@@ -77,8 +79,7 @@ export default class GameScene extends Phaser.Scene {
                 this.state.waveCleared();
                 this.syncHud();
                 this.banner(`Wave ${wave} cleared!`);
-                this.time.delayedCall(BREAK_BETWEEN_WAVES_MS / 2, () => this.chooseUpgrade());
-                this.time.delayedCall(BREAK_BETWEEN_WAVES_MS, () => this.waves.next());
+                this.time.delayedCall(BEFORE_VOTE_MS, () => this.startVote());
             },
         });
 
@@ -97,20 +98,24 @@ export default class GameScene extends Phaser.Scene {
     }
 
     /**
-     * Pick an upgrade between waves. For now one of the drawn options is
-     * chosen at random; the vote (#18, #24) will let chat choose.
+     * Between waves: vote on one of a few upgrades, apply it, then start the next wave.
      */
-    chooseUpgrade() {
-        const options = upgrades.draw(this.balance.upgrade_options_per_vote);
-        const upgrade = Phaser.Utils.Array.GetRandom(options);
-
-        this.applyUpgrade(upgrade);
+    startVote() {
+        this.scene.launch('vote', {
+            options: upgrades.draw(this.balance.upgrade_options_per_vote),
+            balance: this.balance,
+            seconds: this.voteSeconds,
+            onDecided: (upgrade) => {
+                this.applyUpgrade(upgrade);
+                this.time.delayedCall(AFTER_UPGRADE_MS, () => this.waves.next());
+            },
+        });
     }
 
     applyUpgrade(upgrade) {
         applyUpgrade(upgrade, { player: this.player, state: this.state, balance: this.balance });
         this.syncHud();
-        this.banner(`${upgrade.name}\n${upgrade.describe(this.balance)}`, 1200, HEIGHT / 2 + 220);
+        this.banner(`${upgrade.name}\n${upgrade.describe(this.balance)}`);
     }
 
     damagePlayer() {
