@@ -25,8 +25,9 @@ A wave is a set number of enemies; clearing it pauses the game for a chat vote, 
 - **Taking damage:** an enemy that reaches the base is destroyed and the base loses 1 health. The player starts with 5 health.
 - **Wave end:** the number of enemies per wave is configurable. The wave ends when the last enemy is gone, and no new enemies spawn during the vote.
 - **Death:** at 0 health the run ends and restarts at wave 1 with upgrades reset. Only score and stats are kept.
+- **Difficulty ramp:** each wave adds a set number of enemies and a set amount of enemy speed on top of the previous wave. Setting both increments to 0 gives flat waves for balance testing.
 
-Starting health, enemies per wave, enemy speed and fire rate all come from the balance panel (see Configuration).
+Starting health, enemies per wave, enemy speed, fire rate and the ramp increments all come from the balance panel (see Configuration).
 
 ## Upgrades and chat voting
 
@@ -37,8 +38,10 @@ After each cleared wave, chat has a fixed voting window to pick one upgrade, and
 | # | Upgrade | Effect |
 | --- | --- | --- |
 | 1 | Attack speed | Turret fires faster (amount set in the balance panel) |
-| 2 | Heal | Restore 3 health, up to the starting maximum |
+| 2 | Heal | Restore 3 health, up to the current max health |
 | 3 | Max Health | Adds one max health |
+
+An attack damage upgrade is left out of v1 because every enemy has 1 health, so it would have no effect. It comes back with enemy variety.
 
 The design should allow 3 to 5 options per vote later, drawn from a larger pool.
 
@@ -49,6 +52,8 @@ The design should allow 3 to 5 options per vote later, drawn from a larger pool.
 3. Viewers vote with `!vote 1`, `!vote 2` and so on. Each viewer gets one vote.
 4. The vote closes when the streamer's chosen window runs out, or immediately if the streamer picks an option from their dashboard.
 5. The winning upgrade is shown on screen and applied, and the next wave starts.
+
+**Ties and no votes:** a tie is settled by a random pick among the tied options. If nobody votes before the window ends, a random option is picked from all of them.
 
 The voting window is a per-streamer setting, for example 30 seconds, 1 minute or 10 minutes.
 
@@ -67,8 +72,10 @@ Proving we can pull follower avatars from Twitch and put them on enemies is the 
 ### Names and priority
 
 - **Names:** every enemy shows the viewer's username under their face.
-- **Active viewers first:** faces are drawn from a queue that favours recent activity, such as chatting, resubscribing or cheering bits. People watching right now see themselves far more often than followers who aren't there. The weighting gets tuned later.
+- **Active viewers first (first thing after v1):** faces are drawn from a queue that favours recent activity, such as chatting, resubscribing or cheering bits. People watching right now see themselves far more often than followers who aren't there. The weighting gets tuned later.
 - **Everyone else** fills the remaining slots, then stock avatars.
+
+In v1, faces come from followers and then stock avatars. The bot already records when each viewer last chatted, so the priority queue can be added without a data migration.
 
 ## Tech architecture
 
@@ -77,16 +84,16 @@ A Laravel web app with a Phaser.js game, joined by websockets, with one shared c
 &#91;embedded content: system architecture · 6 parts\]
 
 - **Laravel app:** registration and login with Twitch, the streamer dashboard, the global balance panel, and the database for settings and stats.
-- **Phaser game:** served at a unique URL per streamer, which they paste into OBS as a browser source. It loads its config and faces from Laravel and sends back stats at the end of a run.
+- **Phaser game:** served at a unique URL per streamer, which they paste into OBS as a browser source. The game area is a fixed 1920×1080 that scales to fit the source, so balance behaves the same at any size, and the background is transparent. It loads its config and faces from Laravel and sends back stats at the end of a run.
 - **Laravel Reverb:** pushes live events to the game, such as vote counts, the result and dashboard overrides.
-- **Face Invaders bot:** one shared Twitch account (name TBC) that joins a channel when the streamer presses the button. It reads `!vote` commands, tallies them, and never posts in chat; all prompts and results appear in the game. It never uses the streamer's own login.
-- **Repo:** open source from day one, built on stream with Claude Code.
+- **Face Invaders bot:** one shared Twitch account, **FaceInvadersBot**, that joins a channel when the streamer presses the button. It reads `!vote` commands, tallies them, and never posts in chat; all prompts and results appear in the game. It never uses the streamer's own login.
+- **Repo:** open source under the MIT licence from day one, built on stream with Claude Code.
 
-The bot is a long-running process rather than a web request, so it needs its own hosting and restart handling.
+Everything is hosted on **Laravel Cloud**: the app, Reverb, and the bot. The bot is a long-running process rather than a web request, so it runs as its own background process with restart handling. Exactly what the bot needs from Twitch to read a channel's chat is researched during the build.
 
 ## Configuration
 
-Game balance lives in a global admin panel; streamers only control their own stream settings.
+Game balance lives in a global admin panel and is global only in v1; streamers only control their own stream settings. Per-channel balance overrides are a future idea.
 
 | Setting | Who sets it | v1 default |
 | --- | --- | --- |
@@ -95,8 +102,11 @@ Game balance lives in a global admin panel; streamers only control their own str
 | Enemy health | Admin (global) | 1 |
 | Bullet damage | Admin (global) | 1 |
 | Enemy speed | Admin (global) | TBD |
+| Extra enemies per wave (ramp) | Admin (global) | TBD |
+| Extra enemy speed per wave (ramp) | Admin (global) | TBD |
 | Turret fire rate | Admin (global) | TBD |
-| Upgrade amounts (attack speed, heal, damage) | Admin (global) | TBD |
+| Attack speed upgrade amount | Admin (global) | TBD |
+| Heal upgrade amount | Admin (global) | 3 |
 | Number of upgrade options per vote | Admin (global) | 3 |
 | Voting window length | Streamer | TBD, e.g. 30 s to 10 min |
 
@@ -112,20 +122,22 @@ v1 is done when a streamer can log in with Twitch, drop the game into OBS, and h
 - [ ] Pull the streamer's followers and their avatars
 - [ ] Enemy sprite with an avatar window and username, plus stock fallback avatars
 - [ ] Enemies fly from the screen edges to a central base; the turret auto-targets the nearest
-- [ ] Waves of a configurable size, ending when the last enemy is gone
+- [ ] Waves of a configurable size that ramp up each wave, ending when the last enemy is gone
 - [ ] Five health; restart at wave 1 on death
-- [ ] Three upgrades: attack speed, heal, attack damage
+- [ ] Three upgrades: attack speed, heal, max health
 - [ ] Shared bot joins chat from a dashboard button; `!vote N`, one vote per viewer
-- [ ] Streamer-set voting window and dashboard override
+- [ ] Streamer-set voting window and dashboard override; ties and empty votes resolved by random pick
 - [ ] Browser source URL on the dashboard
 - [ ] Global balance panel
-- [ ] Score and stats saved per run
+- [ ] Stats saved per run: score, wave reached, kills, duration and the upgrades picked
 
-**Not in v1:** YouTube, bosses, meta-progression between runs, the community upgrade hook system, viewer opt-out, and anything beyond one-hit enemies.
+**Not in v1:** the active-viewer priority queue, YouTube, bosses, meta-progression between runs, the community upgrade hook system, viewer opt-out, per-channel balance overrides, and anything beyond one-hit enemies.
 
 ## Future ideas and logged issues
 
 These are deliberately out of v1 but should shape how v1 is structured.
+
+- **Active-viewer priority queue:** the first thing after v1 (see Names and priority).
 
 - **Community upgrades:** a hook system so viewers can add upgrades by pull request, such as bullets that grow and shrink or a spinning force field. v1's upgrade code should be written so new upgrades plug in without touching the core loop. Every community pull request is reviewed and tested before merging.
 - **Bosses:** the longest-standing followers or subscribers appear as bosses at set waves (for example 10, 20, 30), tuned from the balance panel.
@@ -133,17 +145,9 @@ These are deliberately out of v1 but should shape how v1 is structured.
 - **Viewer opt-out (issue):** a way for viewers to keep their avatar out of the game. Deferred until it's needed.
 - **Meta-progression:** permanent upgrades that carry between runs.
 - **Enemy variety:** enemies with more health, different speeds or special behaviour.
-- **Deeper voting rules:** changing votes, on-screen live counts, tie-breaking.
+- **Deeper voting rules:** changing votes, on-screen live counts, other tie-breaking rules.
+- **Per-channel balance:** let streamers override selected global balance settings for their own channel.
 
 ## Open questions
 
-- [ ] Does difficulty ramp from wave to wave in v1 (more enemies, faster enemies), or stay flat until balance tuning?
-- [ ] Which stats are saved per run: score, waves reached, kills, anything else?
-- [ ] What happens on a tie, or if nobody votes before the window ends?
-- [ ] Can streamers override any balance settings for their own channel, or is balance global only?
-- [ ] Which open-source licence does the repo use?
-- [ ] What is the bot's final name, and what does it need from Twitch to join and read a channel's chat? To research during the build.
-- [ ] Where are the Laravel app, Reverb and the bot hosted?
-- [ ] Is the game area a fixed resolution (for example 1920×1080) that scales, or does it adapt to the browser source size?
-
-* [ ] Is the active-viewer priority queue part of v1, or the first thing after it?
+None right now. The first round was answered on Sep 27, 2026 and the answers are folded into the sections above.
