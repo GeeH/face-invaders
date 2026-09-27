@@ -32,5 +32,8 @@
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
+        <env name="TWITCH_CLIENT_ID" value="test-client-id"/>
+        <env name="TWITCH_CLIENT_SECRET" value="test-client-secret"/>
+        <env name="TWITCH_REDIRECT_URI" value="http://localhost/auth/twitch/callback"/>
     </php>
 </phpunit>
