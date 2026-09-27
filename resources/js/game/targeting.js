@@ -30,6 +30,13 @@ export function aimAt(from, target) {
 }
 
 /**
+ * Radians per millisecond for a turn speed in degrees per second.
+ */
+export function turnRate(degreesPerSecond) {
+    return (degreesPerSecond * Math.PI) / 180 / 1000;
+}
+
+/**
  * Milliseconds between shots for a fire rate in shots per second.
  */
 export function shotInterval(fireRate) {

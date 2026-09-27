@@ -33,6 +33,7 @@ export default class GameScene extends Phaser.Scene {
 
         this.player = new Player(this, WIDTH / 2, HEIGHT / 2, {
             fireRate: balance.fire_rate,
+            turnSpeed: balance.turn_speed,
             bullets: this.bullets,
         });
 

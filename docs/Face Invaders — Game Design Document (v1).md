@@ -37,13 +37,16 @@ After each cleared wave, chat has a fixed voting window to pick one upgrade, and
 
 | # | Upgrade | Effect |
 | --- | --- | --- |
-| 1 | Attack speed | Turret fires faster (amount set in the balance panel) |
+| 1 | Attack speed | Ship fires faster (amount set in the balance panel) |
 | 2 | Heal | Restore 3 health, up to the current max health |
 | 3 | Max Health | Adds one max health |
+| 4 | Turn speed | Ship turns faster to face enemies (amount set in the balance panel) |
 
 An attack damage upgrade is left out of v1 because every enemy has 1 health, so it would have no effect. It comes back with enemy variety.
 
-The design should allow 3 to 5 options per vote later, drawn from a larger pool.
+Each vote offers 3 of these 4 at random. The design should allow 3 to 5 options per vote later, drawn from a larger pool.
+
+The ship turns slowly by default, so enemies arriving from opposite sides can slip through while it swings round. That's where the jeopardy comes from, and why Turn speed and Attack speed are a real choice for chat.
 
 ### Voting flow
 
@@ -101,11 +104,13 @@ Game balance lives in a global admin panel and is global only in v1; streamers o
 | Enemies per wave | Admin (global) | TBD |
 | Enemy health | Admin (global) | 1 |
 | Bullet damage | Admin (global) | 1 |
-| Enemy speed | Admin (global) | TBD |
+| Enemy speed | Admin (global) | 200 px/s |
 | Extra enemies per wave (ramp) | Admin (global) | TBD |
 | Extra enemy speed per wave (ramp) | Admin (global) | TBD |
-| Turret fire rate | Admin (global) | TBD |
+| Ship fire rate | Admin (global) | 1.5 shots/s |
+| Ship turn speed | Admin (global) | 120°/s |
 | Attack speed upgrade amount | Admin (global) | TBD |
+| Turn speed upgrade amount | Admin (global) | +25% |
 | Heal upgrade amount | Admin (global) | 3 |
 | Number of upgrade options per vote | Admin (global) | 3 |
 | Voting window length | Streamer | TBD, e.g. 30 s to 10 min |
@@ -124,7 +129,7 @@ v1 is done when a streamer can log in with Twitch, drop the game into OBS, and h
 - [ ] Enemies fly from the screen edges to a central base; the turret auto-targets the nearest
 - [ ] Waves of a configurable size that ramp up each wave, ending when the last enemy is gone
 - [ ] Five health; restart at wave 1 on death
-- [ ] Three upgrades: attack speed, heal, max health
+- [ ] Four upgrades: attack speed, heal, max health, turn speed
 - [ ] Shared bot joins chat from a dashboard button; `!vote N`, one vote per viewer
 - [ ] Streamer-set voting window and dashboard override; ties and empty votes resolved by random pick
 - [ ] Browser source URL on the dashboard
