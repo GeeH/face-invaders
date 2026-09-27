@@ -17,7 +17,9 @@ final readonly class GameSettings
         public int $enemySpeed,
         public int $extraEnemySpeedPerWave,
         public float $fireRate,
+        public int $turnSpeed,
         public float $attackSpeedUpgrade,
+        public float $turnSpeedUpgrade,
         public int $healUpgrade,
         public int $upgradeOptionsPerVote,
     ) {}
@@ -35,7 +37,9 @@ final readonly class GameSettings
             enemySpeed: $balance['enemy_speed'],
             extraEnemySpeedPerWave: $balance['extra_enemy_speed_per_wave'],
             fireRate: $balance['fire_rate'],
+            turnSpeed: $balance['turn_speed'],
             attackSpeedUpgrade: $balance['attack_speed_upgrade'],
+            turnSpeedUpgrade: $balance['turn_speed_upgrade'],
             healUpgrade: $balance['heal_upgrade'],
             upgradeOptionsPerVote: $balance['upgrade_options_per_vote'],
         );
@@ -55,7 +59,9 @@ final readonly class GameSettings
             'enemy_speed' => $this->enemySpeed,
             'extra_enemy_speed_per_wave' => $this->extraEnemySpeedPerWave,
             'fire_rate' => $this->fireRate,
+            'turn_speed' => $this->turnSpeed,
             'attack_speed_upgrade' => $this->attackSpeedUpgrade,
+            'turn_speed_upgrade' => $this->turnSpeedUpgrade,
             'heal_upgrade' => $this->healUpgrade,
             'upgrade_options_per_vote' => $this->upgradeOptionsPerVote,
         ];
