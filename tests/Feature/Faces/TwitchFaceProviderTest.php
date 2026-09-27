@@ -125,6 +125,24 @@ it('leaves the avatar empty for followers Twitch no longer returns', function ()
     expect($faces[1]->avatarUrl)->toBeNull();
 });
 
+it('treats Twitch\'s placeholder avatar as no avatar', function () {
+    Http::fake([
+        'api.twitch.tv/helix/channels/followers*' => Http::response(followersPage([
+            follower('1', 'alice'),
+            follower('2', 'nopic'),
+        ])),
+        'api.twitch.tv/helix/users*' => Http::response(twitchUsers([
+            '1' => 'https://static-cdn.jtvnw.net/jtv_user_pictures/alice-profile_image-300x300.png',
+            '2' => 'https://static-cdn.jtvnw.net/user-default-pictures-uv/215b7342-def9-11e9-9a66-784f43822e80-profile_image-300x300.png',
+        ])),
+    ]);
+
+    $faces = fetchFaces($this->streamer);
+
+    expect($faces[0]->avatarUrl)->toContain('alice-profile_image')
+        ->and($faces[1]->avatarUrl)->toBeNull();
+});
+
 it('returns no faces for a channel with no followers', function () {
     Http::fake([
         'api.twitch.tv/helix/channels/followers*' => Http::response(followersPage([])),

@@ -12,7 +12,8 @@ it('shows the streamer\'s faces to Phaser, topped up with stock ones', function 
     $faces = $response->viewData('faces');
     expect($faces)->toHaveCount(40)
         ->and($faces[0]['name'])->toBe('RealFollower')
-        ->and($faces[1]['avatar'])->toContain('/avatars/stock/');
+        ->and($faces[1]['avatar'])->toContain('/avatars/stock/')
+        ->and($faces[0]['fallback'])->toContain('/avatars/stock/');
 });
 
 it('requires login', function () {

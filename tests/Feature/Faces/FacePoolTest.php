@@ -58,6 +58,14 @@ it('gives followers without an avatar a stock one but keeps their name', functio
         ->and($face->avatarUrl)->toStartWith(asset('avatars/stock/'));
 });
 
+it('uses every alien once before repeating any', function () {
+    Follower::factory()->for($this->streamer, 'streamer')->count(12)->create(['avatar_url' => null]);
+
+    $aliens = collect(pool($this->streamer, 20))->pluck('avatarUrl');
+
+    expect($aliens->unique())->toHaveCount(20);
+});
+
 it('only uses the streamer\'s own followers', function () {
     Follower::factory()->count(5)->create();
 
