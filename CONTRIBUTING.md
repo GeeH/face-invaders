@@ -10,15 +10,15 @@ Thanks for wanting to help! Face Invaders is built live on stream and is open so
 
 ## Local setup
 
-The dev environment runs in Docker Compose, so all you need locally is [Docker](https://docs.docker.com/get-docker/). You don't need PHP, Composer, Node or a database installed.
+The dev environment runs in Docker Compose, so all you need locally is [Docker](https://docs.docker.com/get-docker/). You don't need PHP, Composer, Node or a database installed. Common commands are wrapped in a [`justfile`](justfile). `just` is optional (`brew install just`), and every recipe is a plain `docker compose` command you can run yourself.
 
 ```sh
 git clone git@github.com:GeeH/face-invaders.git
 cd face-invaders
-docker compose up -d
+just up        # or: docker compose up -d --wait
 ```
 
-On the first run this builds the PHP image, installs Composer and npm dependencies, creates `.env` with an app key, and runs the migrations. It takes a minute or two; the app is ready once `docker compose ps` shows `app` as healthy.
+On the first run this builds the PHP image, installs Composer and npm dependencies, creates `.env` with an app key, and runs the migrations. It takes a minute or two, and `just up` returns once the app is ready.
 
 | Service | What it runs | URL / port |
 | --- | --- | --- |
@@ -33,14 +33,20 @@ Ports can be changed with `APP_PORT`, `VITE_PORT` and `FORWARD_DB_PORT` in `.env
 
 ### Everyday commands
 
+Run `just` on its own to list every recipe. The ones you'll use most:
+
 ```sh
-docker compose exec app php artisan test        # run the Pest test suite
-docker compose exec app vendor/bin/pint         # fix code style
-docker compose exec app php artisan migrate     # run new migrations
-docker compose exec app composer require …      # add a PHP package
-docker compose exec vite npm install …          # add an npm package
-docker compose logs -f app                      # follow the app logs
-docker compose down                             # stop everything (add -v to wipe the database)
+just up / just down      # start / stop the dev environment
+just test                # run the Pest test suite (args pass through: just test --filter=Health)
+just ci                  # run the same checks as CI (Pint + tests) before pushing
+just fix                 # fix code style with Pint
+just artisan …           # run any artisan command, e.g. just artisan make:model Follower
+just composer …          # e.g. just composer require foo/bar
+just npm …               # e.g. just npm install phaser
+just migrate / fresh     # run migrations / rebuild the database and seed
+just logs app            # follow a service's logs
+just shell / tinker / db # shell in the app container / Tinker / psql
+just reset               # stop everything and wipe the database
 ```
 
 Tests run against an in-memory SQLite database, so they don't touch your dev data.
