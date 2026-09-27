@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { HEIGHT, WIDTH } from '../config';
 import { preloadSprites } from '../assets';
+import { loadFaces } from '../faces';
 import { fetchRun } from '../run';
 
 const RETRY_SECONDS = 5;
@@ -35,6 +36,8 @@ export default class BootScene extends Phaser.Scene {
     async startRun() {
         try {
             const run = await fetchRun(this.registry.get('runUrl'));
+            this.status.setText('Loading faces…');
+            await loadFaces(this, run.faces);
             this.registry.set('run', run);
             this.scene.start('game');
         } catch (error) {
