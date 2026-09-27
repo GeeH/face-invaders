@@ -3,7 +3,7 @@ import { BULLET_SPEED, HEIGHT, WIDTH } from '../config';
 import { useCircleBody } from './circleBody';
 
 /**
- * A pooled turret shot. Bullets are recycled rather than created per shot:
+ * A pooled player shot. Bullets are recycled rather than created per shot:
  * fire() wakes a sleeping one up, kill() puts it back to sleep.
  */
 export default class Bullet extends Phaser.Physics.Arcade.Image {

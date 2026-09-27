@@ -1,15 +1,16 @@
 import Phaser from 'phaser';
+import { PLAYER_SHIPS } from '../assets';
 import { TURRET_TURN_SPEED } from '../config';
 import { aimAt, nearest, shotInterval } from '../targeting';
 
-// Only fire once the barrel is roughly on target.
+// Only fire once the ship is roughly facing its target.
 const AIM_TOLERANCE = 0.2;
 
 /**
- * The fixed central base with a gun that turns toward the nearest enemy and
- * fires automatically.
+ * The player's ship: fixed in the centre, it turns toward the nearest enemy
+ * and fires automatically. A random ship is picked each run for variety.
  */
-export default class Turret {
+export default class Player {
     constructor(scene, x, y, { fireRate, bullets }) {
         this.scene = scene;
         this.x = x;
@@ -18,9 +19,7 @@ export default class Turret {
         this.fireRate = fireRate;
         this.nextShotAt = 0;
 
-        this.base = scene.add.image(x, y, 'base').setScale(1.6).setDepth(10);
-        // The barrel pivots near its bottom so it swivels around the base's centre.
-        this.gun = scene.add.image(x, y, 'turret').setOrigin(0.5, 0.8).setScale(1.8).setDepth(11);
+        this.ship = scene.add.image(x, y, Phaser.Utils.Array.GetRandom(PLAYER_SHIPS)).setScale(1.2).setDepth(10);
     }
 
     update(time, delta, enemies) {
@@ -31,9 +30,9 @@ export default class Turret {
         }
 
         const wanted = aimAt(this, target);
-        this.gun.rotation = Phaser.Math.Angle.RotateTo(this.gun.rotation, wanted, TURRET_TURN_SPEED * delta);
+        this.ship.rotation = Phaser.Math.Angle.RotateTo(this.ship.rotation, wanted, TURRET_TURN_SPEED * delta);
 
-        const onTarget = Math.abs(Phaser.Math.Angle.Wrap(wanted - this.gun.rotation)) < AIM_TOLERANCE;
+        const onTarget = Math.abs(Phaser.Math.Angle.Wrap(wanted - this.ship.rotation)) < AIM_TOLERANCE;
 
         if (onTarget && time >= this.nextShotAt) {
             this.fire();
@@ -48,8 +47,8 @@ export default class Turret {
             return; // Pool exhausted; skip this shot.
         }
 
-        // Spawn at the barrel tip.
-        const tip = new Phaser.Math.Vector2(0, -this.gun.displayHeight * 0.8).rotate(this.gun.rotation);
-        bullet.fire(this.x + tip.x, this.y + tip.y, this.gun.rotation);
+        // Spawn at the ship's nose.
+        const nose = new Phaser.Math.Vector2(0, -this.ship.displayHeight / 2).rotate(this.ship.rotation);
+        bullet.fire(this.x + nose.x, this.y + nose.y, this.ship.rotation);
     }
 }

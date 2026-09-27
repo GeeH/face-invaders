@@ -2,7 +2,8 @@ import Phaser from 'phaser';
 import { HEIGHT, WIDTH } from '../config';
 import Bullet from '../objects/Bullet';
 import Enemy from '../objects/Enemy';
-import Turret from '../objects/Turret';
+import { FaceQueue } from '../faces';
+import Player from '../objects/Player';
 
 // Temporary steady trickle of enemies until waves arrive (#15).
 const SPAWN_EVERY_MS = 900;
@@ -13,12 +14,13 @@ export default class GameScene extends Phaser.Scene {
     }
 
     create() {
-        const { balance } = this.registry.get('run');
+        const { balance, faces } = this.registry.get('run');
+        this.faces = new FaceQueue(faces);
 
         this.bullets = this.physics.add.group({ classType: Bullet, maxSize: 60, runChildUpdate: true });
         this.enemies = this.physics.add.group({ classType: Enemy, maxSize: 100, runChildUpdate: true });
 
-        this.turret = new Turret(this, WIDTH / 2, HEIGHT / 2, {
+        this.player = new Player(this, WIDTH / 2, HEIGHT / 2, {
             fireRate: balance.fire_rate,
             bullets: this.bullets,
         });
@@ -38,12 +40,17 @@ export default class GameScene extends Phaser.Scene {
         this.time.addEvent({
             delay: SPAWN_EVERY_MS,
             loop: true,
-            callback: () => this.enemies.get()?.spawn({ health: balance.enemy_health, speed: balance.enemy_speed }),
+            callback: () =>
+                this.enemies.get()?.spawn({
+                    face: this.faces.next(),
+                    health: balance.enemy_health,
+                    speed: balance.enemy_speed,
+                }),
         });
     }
 
     update(time, delta) {
-        this.turret.update(time, delta, this.enemies.getMatching('active', true));
+        this.player.update(time, delta, this.enemies.getMatching('active', true));
     }
 
     explode(x, y) {
