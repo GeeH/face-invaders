@@ -80,6 +80,10 @@ fresh:
 test *args:
     docker compose exec app php artisan test "$@"
 
+# Run the JavaScript (Vitest) tests
+test-js:
+    docker compose exec vite npm test
+
 # Check code style without changing files
 lint:
     docker compose exec app vendor/bin/pint --test
@@ -89,4 +93,4 @@ fix:
     docker compose exec app vendor/bin/pint
 
 # Run the same checks as CI: lint and tests
-ci: lint test
+ci: lint test test-js

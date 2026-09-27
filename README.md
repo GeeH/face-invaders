@@ -26,6 +26,10 @@ The bot only listens for `!vote` commands. It never posts in chat, and it never 
 
 The full design, including gameplay, upgrades, voting, configuration and v1 scope, is in the [Game Design Document](docs/Face%20Invaders%20%E2%80%94%20Game%20Design%20Document%20(v1).md).
 
+## Credits
+
+Game sprites are from [Kenney](https://kenney.nl)'s [Space Shooter Remastered](https://kenney.nl/assets/space-shooter-remastered) pack (CC0). Thanks, Kenney!
+
 ## Contributing
 
 Contributions are welcome, and later on viewers will be able to add their own upgrades by pull request. See [CONTRIBUTING.md](CONTRIBUTING.md).
