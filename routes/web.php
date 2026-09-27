@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\TwitchController;
+use App\Http\Controllers\FollowerSyncController;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'home')->name('home');
@@ -12,5 +13,9 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware('auth')->group(function () {
     Route::view('/dashboard', 'dashboard')->name('dashboard');
+    Route::get('/followers/sync', [FollowerSyncController::class, 'show'])->name('followers.sync.show');
+    Route::post('/followers/sync', [FollowerSyncController::class, 'store'])
+        ->middleware('throttle:follower-sync')
+        ->name('followers.sync');
     Route::post('/logout', [TwitchController::class, 'logout'])->name('logout');
 });

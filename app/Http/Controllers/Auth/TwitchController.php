@@ -51,6 +51,8 @@ class TwitchController extends Controller
             ],
         );
 
+        $user->syncFollowers();
+
         Auth::login($user, remember: true);
         $request->session()->regenerate();
 

@@ -1,7 +1,9 @@
 <?php
 
+use App\Jobs\SyncFollowers;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Queue;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\InvalidStateException;
 use SocialiteProviders\Manager\OAuth2\User as SocialiteUser;
@@ -60,6 +62,15 @@ it('creates a streamer from their Twitch account and logs them in', function () 
         ->and($user->twitch_token_expires_at->between(now()->addHours(4)->subMinute(), now()->addHours(4)))->toBeTrue();
 
     $this->assertAuthenticatedAs($user);
+});
+
+it('queues a follower sync when the streamer logs in', function () {
+    Queue::fake();
+    fakeTwitchCallback(fakeTwitchUser());
+
+    $this->get(route('auth.twitch.callback'));
+
+    Queue::assertPushed(SyncFollowers::class, fn (SyncFollowers $job) => $job->streamer->is(User::sole()));
 });
 
 it('updates an existing streamer instead of creating a duplicate', function () {
