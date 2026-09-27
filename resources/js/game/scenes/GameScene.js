@@ -1,31 +1,61 @@
 import Phaser from 'phaser';
 import { HEIGHT, WIDTH } from '../config';
+import Bullet from '../objects/Bullet';
+import Enemy from '../objects/Enemy';
+import Turret from '../objects/Turret';
 
-/**
- * The main game. For now it only shows that the game is running; the base,
- * turret, enemies and waves arrive in #13 to #15.
- */
+// Temporary steady trickle of enemies until waves arrive (#15).
+const SPAWN_EVERY_MS = 900;
+
 export default class GameScene extends Phaser.Scene {
     constructor() {
         super('game');
     }
 
     create() {
-        const run = this.registry.get('run');
+        const { balance } = this.registry.get('run');
 
-        const title = this.add
-            .text(WIDTH / 2, HEIGHT / 2, `Face Invaders\n${run.streamer.name}\n${run.faces.length} faces ready`, {
-                fontFamily: 'system-ui, sans-serif',
-                fontSize: '72px',
-                fontStyle: 'bold',
-                color: '#ffffff',
-                align: 'center',
-                stroke: '#000000',
-                strokeThickness: 8,
-            })
-            .setOrigin(0.5);
+        this.bullets = this.physics.add.group({ classType: Bullet, maxSize: 60, runChildUpdate: true });
+        this.enemies = this.physics.add.group({ classType: Enemy, maxSize: 100, runChildUpdate: true });
 
-        // Fade the title out so it doesn't sit on top of the stream.
-        this.tweens.add({ targets: title, alpha: 0, delay: 3000, duration: 1000 });
+        this.turret = new Turret(this, WIDTH / 2, HEIGHT / 2, {
+            fireRate: balance.fire_rate,
+            bullets: this.bullets,
+        });
+
+        this.physics.add.overlap(this.bullets, this.enemies, (bullet, enemy) => {
+            if (!bullet.active || !enemy.active) {
+                return;
+            }
+
+            bullet.kill();
+
+            if (enemy.hit(balance.bullet_damage)) {
+                this.explode(enemy.x, enemy.y);
+            }
+        });
+
+        this.time.addEvent({
+            delay: SPAWN_EVERY_MS,
+            loop: true,
+            callback: () => this.enemies.get()?.spawn({ health: balance.enemy_health, speed: balance.enemy_speed }),
+        });
+    }
+
+    update(time, delta) {
+        this.turret.update(time, delta, this.enemies.getMatching('active', true));
+    }
+
+    explode(x, y) {
+        const flash = this.add.image(x, y, 'hit').setDepth(20).setScale(0.6);
+
+        this.tweens.add({
+            targets: flash,
+            scale: 2,
+            alpha: 0,
+            angle: 90,
+            duration: 250,
+            onComplete: () => flash.destroy(),
+        });
     }
 }

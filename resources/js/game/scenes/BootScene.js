@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { HEIGHT, WIDTH } from '../config';
+import { preloadSprites } from '../assets';
 import { fetchRun } from '../run';
 
 const RETRY_SECONDS = 5;
@@ -11,6 +12,10 @@ const RETRY_SECONDS = 5;
 export default class BootScene extends Phaser.Scene {
     constructor() {
         super('boot');
+    }
+
+    preload() {
+        preloadSprites(this);
     }
 
     create() {

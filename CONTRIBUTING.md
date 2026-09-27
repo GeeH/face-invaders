@@ -39,7 +39,8 @@ Run `just` on its own to list every recipe. The ones you'll use most:
 ```sh
 just up / just down      # start / stop the dev environment
 just test                # run the Pest test suite (args pass through: just test --filter=Health)
-just ci                  # run the same checks as CI (Pint + tests) before pushing
+just test-js             # run the JavaScript tests (Vitest)
+just ci                  # run the same checks as CI (Pint, Pest, Vitest) before pushing
 just fix                 # fix code style with Pint
 just artisan …           # run any artisan command, e.g. just artisan make:model Follower
 just composer …          # e.g. just composer require foo/bar
@@ -51,6 +52,10 @@ just reset               # stop everything and wipe the database
 ```
 
 Tests run against an in-memory SQLite database, so they don't touch your dev data.
+
+### Debugging the game
+
+Add `?debug` to your game URL to see physics hitboxes. It also exposes the game as `window.faceInvaders` in the browser console.
 
 ## Branches and pull requests
 
