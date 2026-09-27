@@ -11,20 +11,19 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Streamers only ever log in with Twitch, so there are no passwords or emails.
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->string('email')->unique();
-            $table->timestamp('email_verified_at')->nullable();
-            $table->string('password');
+            $table->string('twitch_id')->unique();
+            $table->string('twitch_login');
+            $table->string('display_name');
+            $table->string('avatar_url')->nullable();
+            $table->text('twitch_access_token')->nullable();
+            $table->text('twitch_refresh_token')->nullable();
+            $table->timestamp('twitch_token_expires_at')->nullable();
+            $table->json('twitch_scopes')->nullable();
             $table->rememberToken();
             $table->timestamps();
-        });
-
-        Schema::create('password_reset_tokens', function (Blueprint $table) {
-            $table->string('email')->primary();
-            $table->string('token');
-            $table->timestamp('created_at')->nullable();
         });
 
         Schema::create('sessions', function (Blueprint $table) {
@@ -43,7 +42,6 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('users');
-        Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('sessions');
     }
 };

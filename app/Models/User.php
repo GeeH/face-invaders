@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -10,8 +9,17 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'password'])]
-#[Hidden(['password', 'remember_token'])]
+#[Fillable([
+    'twitch_id',
+    'twitch_login',
+    'display_name',
+    'avatar_url',
+    'twitch_access_token',
+    'twitch_refresh_token',
+    'twitch_token_expires_at',
+    'twitch_scopes',
+])]
+#[Hidden(['twitch_access_token', 'twitch_refresh_token', 'remember_token'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
@@ -25,8 +33,10 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'twitch_access_token' => 'encrypted',
+            'twitch_refresh_token' => 'encrypted',
+            'twitch_token_expires_at' => 'datetime',
+            'twitch_scopes' => 'array',
         ];
     }
 }

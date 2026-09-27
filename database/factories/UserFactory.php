@@ -4,7 +4,6 @@ namespace Database\Factories;
 
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 /**
@@ -13,33 +12,34 @@ use Illuminate\Support\Str;
 class UserFactory extends Factory
 {
     /**
-     * The current password being used by the factory.
-     */
-    protected static ?string $password;
-
-    /**
      * Define the model's default state.
      *
      * @return array<string, mixed>
      */
     public function definition(): array
     {
+        $login = fake()->unique()->userName();
+
         return [
-            'name' => fake()->name(),
-            'email' => fake()->unique()->safeEmail(),
-            'email_verified_at' => now(),
-            'password' => static::$password ??= Hash::make('password'),
+            'twitch_id' => (string) fake()->unique()->numberBetween(10_000, 999_999_999),
+            'twitch_login' => strtolower($login),
+            'display_name' => $login,
+            'avatar_url' => fake()->imageUrl(300, 300),
+            'twitch_access_token' => Str::random(30),
+            'twitch_refresh_token' => Str::random(50),
+            'twitch_token_expires_at' => now()->addHours(4),
+            'twitch_scopes' => config('services.twitch.scopes'),
             'remember_token' => Str::random(10),
         ];
     }
 
     /**
-     * Indicate that the model's email address should be unverified.
+     * Indicate that the user's Twitch access token has expired.
      */
-    public function unverified(): static
+    public function withExpiredToken(): static
     {
         return $this->state(fn (array $attributes) => [
-            'email_verified_at' => null,
+            'twitch_token_expires_at' => now()->subMinute(),
         ]);
     }
 }
