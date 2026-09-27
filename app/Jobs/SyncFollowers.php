@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Enums\FollowerSyncStatus;
 use App\Faces\Face;
 use App\Faces\FaceProvider;
 use App\Models\Follower;
@@ -17,6 +18,7 @@ use Illuminate\Queue\Attributes\Timeout;
 use Illuminate\Queue\Attributes\Tries;
 use Illuminate\Queue\Attributes\UniqueFor;
 use Illuminate\Support\LazyCollection;
+use Throwable;
 
 /**
  * Copies a streamer's followers from their face provider into the database,
@@ -46,6 +48,7 @@ class SyncFollowers implements ShouldBeUnique, ShouldQueue
     public function handle(FaceProvider $provider): void
     {
         $startedAt = now();
+        $this->setStatus(FollowerSyncStatus::Running);
 
         try {
             LazyCollection::make(fn () => yield from $provider->fetchFaces($this->streamer))
@@ -53,6 +56,7 @@ class SyncFollowers implements ShouldBeUnique, ShouldQueue
                 ->each(fn (LazyCollection $faces) => $this->store($provider->name(), $faces, $startedAt));
         } catch (TwitchReauthorizationRequired) {
             // Retrying won't help until the streamer logs in again, which syncs them anyway.
+            $this->setStatus(FollowerSyncStatus::NeedsLogin);
             $this->fail('The streamer needs to log in to Twitch again.');
 
             return;
@@ -64,7 +68,25 @@ class SyncFollowers implements ShouldBeUnique, ShouldQueue
             ->where('synced_at', '<', $startedAt)
             ->delete();
 
-        $this->streamer->forceFill(['followers_synced_at' => $startedAt])->save();
+        $this->streamer->forceFill([
+            'followers_sync_status' => FollowerSyncStatus::Succeeded,
+            'followers_synced_at' => $startedAt,
+        ])->save();
+    }
+
+    /**
+     * Called once every retry has been used up.
+     */
+    public function failed(?Throwable $e): void
+    {
+        if ($this->streamer->fresh()?->followers_sync_status !== FollowerSyncStatus::NeedsLogin) {
+            $this->setStatus(FollowerSyncStatus::Failed);
+        }
+    }
+
+    private function setStatus(FollowerSyncStatus $status): void
+    {
+        $this->streamer->forceFill(['followers_sync_status' => $status])->save();
     }
 
     /**

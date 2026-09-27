@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\FollowerSyncStatus;
 use App\Faces\Face;
 use App\Faces\FaceProvider;
 use App\Faces\FakeFaceProvider;
@@ -155,5 +156,6 @@ it('gives up without retrying when the streamer needs to log in again', function
     $job->handle(app(FaceProvider::class));
 
     $job->assertFailed();
-    expect($this->streamer->followers()->count())->toBe(1);
+    expect($this->streamer->followers()->count())->toBe(1)
+        ->and($this->streamer->fresh()->followers_sync_status)->toBe(FollowerSyncStatus::NeedsLogin);
 });

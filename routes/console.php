@@ -1,6 +1,5 @@
 <?php
 
-use App\Jobs\SyncFollowers;
 use App\Models\User;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -10,7 +9,7 @@ Artisan::command('followers:sync {user? : The ID of one streamer to sync}', func
 
     $count = 0;
     $streamers->lazyById()->each(function (User $streamer) use (&$count) {
-        SyncFollowers::dispatch($streamer);
+        $streamer->syncFollowers();
         $count++;
     });
 
