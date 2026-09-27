@@ -1,5 +1,7 @@
 <?php
 
+use App\Faces\Face;
+use App\Faces\FacePool;
 use App\Http\Controllers\Auth\TwitchController;
 use App\Http\Controllers\FollowerSyncController;
 use Illuminate\Support\Facades\Route;
@@ -17,5 +19,13 @@ Route::middleware('auth')->group(function () {
     Route::post('/followers/sync', [FollowerSyncController::class, 'store'])
         ->middleware('throttle:follower-sync')
         ->name('followers.sync');
+
+    // Spike for #10: the streamer's follower faces drawn by Phaser. Replaced by the real game in M2.
+    Route::get('/spike/faces', fn (FacePool $pool) => view('spike.faces', [
+        'faces' => array_map(fn (Face $face) => [
+            'name' => $face->displayName,
+            'avatar' => $face->avatarUrl,
+        ], $pool->for(auth()->user(), 40)),
+    ]))->name('spike.faces');
     Route::post('/logout', [TwitchController::class, 'logout'])->name('logout');
 });
