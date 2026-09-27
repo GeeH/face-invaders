@@ -1,12 +1,13 @@
 import Phaser from 'phaser';
 import { HEIGHT, WIDTH } from '../config';
+import { FaceQueue } from '../faces';
 import Bullet from '../objects/Bullet';
 import Enemy from '../objects/Enemy';
-import { FaceQueue } from '../faces';
 import Player from '../objects/Player';
+import { Waves } from '../waves';
 
-// Temporary steady trickle of enemies until waves arrive (#15).
-const SPAWN_EVERY_MS = 900;
+// Pause between waves until the chat vote replaces it (#17, #18).
+const BREAK_BETWEEN_WAVES_MS = 3000;
 
 export default class GameScene extends Phaser.Scene {
     constructor() {
@@ -37,20 +38,32 @@ export default class GameScene extends Phaser.Scene {
             }
         });
 
-        this.time.addEvent({
-            delay: SPAWN_EVERY_MS,
-            loop: true,
-            callback: () =>
-                this.enemies.get()?.spawn({
-                    face: this.faces.next(),
-                    health: balance.enemy_health,
-                    speed: balance.enemy_speed,
-                }),
+        this.waves = new Waves(balance, {
+            spawn: ({ health, speed }) => {
+                const enemy = this.enemies.get();
+                enemy?.spawn({ face: this.faces.next(), health, speed });
+
+                return Boolean(enemy);
+            },
+            onStart: (wave) => {
+                // The HUD (#16) reads the wave number from the registry.
+                this.registry.set('wave', wave);
+                this.banner(`Wave ${wave}`);
+            },
+            onCleared: (wave) => {
+                this.banner(`Wave ${wave} cleared!`);
+                this.time.delayedCall(BREAK_BETWEEN_WAVES_MS, () => this.waves.next());
+            },
         });
+
+        this.waves.start();
     }
 
     update(time, delta) {
-        this.player.update(time, delta, this.enemies.getMatching('active', true));
+        const enemies = this.enemies.getMatching('active', true);
+
+        this.player.update(time, delta, enemies);
+        this.waves.update(delta, enemies.length);
     }
 
     explode(x, y) {
@@ -63,6 +76,33 @@ export default class GameScene extends Phaser.Scene {
             angle: 90,
             duration: 250,
             onComplete: () => flash.destroy(),
+        });
+    }
+
+    /**
+     * A big message in the middle of the screen that fades away.
+     */
+    banner(message) {
+        const text = this.add
+            .text(WIDTH / 2, HEIGHT / 2 - 200, message, {
+                fontFamily: 'system-ui, sans-serif',
+                fontSize: '80px',
+                fontStyle: 'bold',
+                color: '#ffffff',
+                stroke: '#000000',
+                strokeThickness: 10,
+            })
+            .setOrigin(0.5)
+            .setDepth(30)
+            .setAlpha(0);
+
+        this.tweens.chain({
+            targets: text,
+            tweens: [
+                { alpha: 1, scale: { from: 0.8, to: 1 }, duration: 250, ease: 'Back.out' },
+                { alpha: 0, delay: 1200, duration: 400 },
+            ],
+            onComplete: () => text.destroy(),
         });
     }
 }
