@@ -11,10 +11,10 @@ export default class GameScene extends Phaser.Scene {
     }
 
     create() {
-        const streamer = this.registry.get('streamer');
+        const run = this.registry.get('run');
 
         const title = this.add
-            .text(WIDTH / 2, HEIGHT / 2, `Face Invaders\n${streamer}`, {
+            .text(WIDTH / 2, HEIGHT / 2, `Face Invaders\n${run.streamer.name}\n${run.faces.length} faces ready`, {
                 fontFamily: 'system-ui, sans-serif',
                 fontSize: '72px',
                 fontStyle: 'bold',

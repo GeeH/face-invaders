@@ -24,6 +24,7 @@ use Illuminate\Support\Str;
     'twitch_scopes',
     'followers_sync_status',
     'followers_synced_at',
+    'voting_window_seconds',
 ])]
 #[Hidden(['twitch_access_token', 'twitch_refresh_token', 'play_token', 'remember_token'])]
 class User extends Authenticatable
@@ -55,6 +56,7 @@ class User extends Authenticatable
             'twitch_scopes' => 'array',
             'followers_sync_status' => FollowerSyncStatus::class,
             'followers_synced_at' => 'datetime',
+            'voting_window_seconds' => 'integer',
         ];
     }
 

@@ -38,6 +38,9 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('follower-sync', fn (Request $request) => Limit::perMinute(2)->by($request->user()->id)
             ->response(fn () => back()->with('error', 'You just synced. Try again in a minute.')));
 
+        // A run starts at most every few seconds (after a death), so this only stops abuse of a leaked URL.
+        RateLimiter::for('game-run', fn (Request $request) => Limit::perMinute(30)->by($request->route('token')));
+
         Event::listen(function (SocialiteWasCalled $event) {
             $event->extendSocialite('twitch', TwitchProvider::class);
         });
