@@ -7,6 +7,17 @@
         Welcome, {{ $user->display_name }}. Your game URL, bot controls and stats will appear here.
     </p>
 
+    <section class="mt-8 rounded-lg border border-zinc-800 bg-zinc-900 p-6" aria-labelledby="game-url-heading">
+        <h2 id="game-url-heading" class="text-lg font-semibold">Your game URL</h2>
+        <p class="mt-1 text-zinc-400">
+            Add this as a <strong class="text-zinc-200">Browser Source</strong> in OBS at 1920×1080. Keep it secret: anyone with it can load your game.
+        </p>
+        <div class="mt-4 flex flex-wrap items-center gap-3">
+            <code class="min-w-0 flex-1 truncate rounded-md bg-zinc-950 px-3 py-2 text-sm text-zinc-300">{{ $user->playUrl() }}</code>
+            <a href="{{ $user->playUrl() }}" target="_blank" rel="noopener" class="rounded-md border border-zinc-700 px-4 py-2 text-sm font-semibold hover:bg-zinc-800">Open</a>
+        </div>
+    </section>
+
     <section
         class="mt-8 rounded-lg border border-zinc-800 bg-zinc-900 p-6"
         aria-labelledby="followers-heading"
