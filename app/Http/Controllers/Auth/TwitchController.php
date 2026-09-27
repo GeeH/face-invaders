@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\SyncFollowers;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -50,6 +51,8 @@ class TwitchController extends Controller
                 'twitch_scopes' => $twitchUser->approvedScopes,
             ],
         );
+
+        SyncFollowers::dispatch($user);
 
         Auth::login($user, remember: true);
         $request->session()->regenerate();

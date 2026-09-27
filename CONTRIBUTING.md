@@ -25,6 +25,7 @@ On the first run this builds the PHP image, installs Composer and npm dependenci
 | `app` | Laravel (`php artisan serve`) | http://localhost:8000 |
 | `vite` | Vite dev server with hot reload | http://localhost:5173 |
 | `queue` | Queue worker (`queue:listen`, reloads on code changes) | – |
+| `scheduler` | Scheduled tasks (`schedule:work`), e.g. the six-hourly follower sync | – |
 | `pgsql` | PostgreSQL 18 | `localhost:5432` |
 
 Ports can be changed with `APP_PORT`, `VITE_PORT` and `FORWARD_DB_PORT` in `.env`.

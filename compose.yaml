@@ -32,6 +32,15 @@ services:
             app:
                 condition: service_healthy
 
+    scheduler:
+        image: face-invaders/php
+        command: php artisan schedule:work
+        volumes:
+            - .:/var/www/html
+        depends_on:
+            app:
+                condition: service_healthy
+
     vite:
         image: node:24-alpine
         working_dir: /var/www/html
