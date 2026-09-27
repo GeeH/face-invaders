@@ -20,6 +20,7 @@ export default class Player {
         this.nextShotAt = 0;
 
         this.ship = scene.add.image(x, y, Phaser.Utils.Array.GetRandom(PLAYER_SHIPS)).setScale(1.2).setDepth(10);
+        scene.registry.set('ship', this.ship.texture.key);
     }
 
     update(time, delta, enemies) {
@@ -38,6 +39,14 @@ export default class Player {
             this.fire();
             this.nextShotAt = time + shotInterval(this.fireRate);
         }
+    }
+
+    /**
+     * Flash red when hit.
+     */
+    flash() {
+        this.ship.setTint(0xff4444);
+        this.scene.time.delayedCall(150, () => this.ship.clearTint());
     }
 
     fire() {
