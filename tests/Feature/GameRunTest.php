@@ -34,8 +34,8 @@ it('puts followers first, then stock faces', function () {
 
     $faces = $this->getJson(route('play.run', $this->streamer->play_token))->json('faces');
 
-    expect(collect($faces)->take(2)->pluck('id')->sort()->values()->all())
-        ->toBe($this->streamer->followers()->orderBy('provider_user_id')->pluck('provider_user_id')->all())
+    expect(collect($faces)->take(2)->pluck('id')->all())
+        ->toEqualCanonicalizing($this->streamer->followers()->pluck('provider_user_id')->all())
         ->and($faces[2]['id'])->toStartWith('stock-')
         ->and($faces[0]['fallback'])->toContain('/avatars/stock/');
 });
