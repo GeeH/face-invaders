@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Str;
 
 #[Fillable([
     'twitch_id',
@@ -24,11 +25,21 @@ use Illuminate\Notifications\Notifiable;
     'followers_sync_status',
     'followers_synced_at',
 ])]
-#[Hidden(['twitch_access_token', 'twitch_refresh_token', 'remember_token'])]
+#[Hidden(['twitch_access_token', 'twitch_refresh_token', 'play_token', 'remember_token'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
+
+    /**
+     * Give every new streamer a game URL.
+     */
+    protected static function booted(): void
+    {
+        static::creating(function (User $user) {
+            $user->play_token ??= static::newPlayToken();
+        });
+    }
 
     /**
      * Get the attributes that should be cast.
@@ -55,6 +66,27 @@ class User extends Authenticatable
     public function followers(): HasMany
     {
         return $this->hasMany(Follower::class);
+    }
+
+    /**
+     * The streamer's personal game URL, pasted into OBS as a browser source.
+     */
+    public function playUrl(): string
+    {
+        return route('play', $this->play_token);
+    }
+
+    /**
+     * Replace the game URL, e.g. if it leaked on stream. The old URL stops working.
+     */
+    public function regeneratePlayToken(): void
+    {
+        $this->forceFill(['play_token' => static::newPlayToken()])->save();
+    }
+
+    private static function newPlayToken(): string
+    {
+        return Str::random(40);
     }
 
     /**
