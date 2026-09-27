@@ -1,0 +1,63 @@
+services:
+    app:
+        build:
+            context: .
+            dockerfile: docker/php/Dockerfile
+            args:
+                UID: ${UID:-1000}
+                GID: ${GID:-1000}
+        image: face-invaders/php
+        command: php artisan serve --host=0.0.0.0 --port=8000
+        environment:
+            RUN_SETUP: 'true'
+        ports:
+            - '${APP_PORT:-8000}:8000'
+        volumes:
+            - .:/var/www/html
+        depends_on:
+            pgsql:
+                condition: service_healthy
+        healthcheck:
+            test: ['CMD', 'php', '-r', "exit(@file_get_contents('http://localhost:8000/up') === false ? 1 : 0);"]
+            interval: 1m
+            start_period: 2m
+            start_interval: 2s
+
+    queue:
+        image: face-invaders/php
+        command: php artisan queue:listen --tries=1
+        volumes:
+            - .:/var/www/html
+        depends_on:
+            app:
+                condition: service_healthy
+
+    vite:
+        image: node:24-alpine
+        working_dir: /var/www/html
+        command: sh -c "npm install && npm run dev"
+        ports:
+            - '${VITE_PORT:-5173}:5173'
+        volumes:
+            - .:/var/www/html
+            # Keep Linux node_modules separate from any on the host (native binaries differ).
+            - node_modules:/var/www/html/node_modules
+
+    pgsql:
+        image: postgres:18-alpine
+        environment:
+            POSTGRES_DB: ${DB_DATABASE:-face_invaders}
+            POSTGRES_USER: ${DB_USERNAME:-face_invaders}
+            POSTGRES_PASSWORD: ${DB_PASSWORD:-secret}
+        ports:
+            - '${FORWARD_DB_PORT:-5432}:5432'
+        volumes:
+            - pgsql:/var/lib/postgresql
+        healthcheck:
+            test: ['CMD', 'pg_isready', '-q', '-d', '${DB_DATABASE:-face_invaders}', '-U', '${DB_USERNAME:-face_invaders}']
+            interval: 2s
+            retries: 30
+
+volumes:
+    pgsql:
+    node_modules:

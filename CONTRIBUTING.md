@@ -10,13 +10,52 @@ Thanks for wanting to help! Face Invaders is built live on stream and is open so
 
 ## Local setup
 
-_Coming soon._ This section will be filled in once the Laravel app is scaffolded (#3).
+The dev environment runs in Docker Compose, so all you need locally is [Docker](https://docs.docker.com/get-docker/). You don't need PHP, Composer, Node or a database installed. Common commands are wrapped in a [`justfile`](justfile). `just` is optional (`brew install just`), and every recipe is a plain `docker compose` command you can run yourself.
+
+```sh
+git clone git@github.com:GeeH/face-invaders.git
+cd face-invaders
+just up        # or: docker compose up -d --wait
+```
+
+On the first run this builds the PHP image, installs Composer and npm dependencies, creates `.env` with an app key, and runs the migrations. It takes a minute or two, and `just up` returns once the app is ready.
+
+| Service | What it runs | URL / port |
+| --- | --- | --- |
+| `app` | Laravel (`php artisan serve`) | http://localhost:8000 |
+| `vite` | Vite dev server with hot reload | http://localhost:5173 |
+| `queue` | Queue worker (`queue:listen`, reloads on code changes) | – |
+| `pgsql` | PostgreSQL 18 | `localhost:5432` |
+
+Ports can be changed with `APP_PORT`, `VITE_PORT` and `FORWARD_DB_PORT` in `.env`.
+
+**Linux users:** add `UID` and `GID` to `.env` (from `id -u` and `id -g`) and rebuild with `docker compose build`, so files the containers create are owned by you.
+
+### Everyday commands
+
+Run `just` on its own to list every recipe. The ones you'll use most:
+
+```sh
+just up / just down      # start / stop the dev environment
+just test                # run the Pest test suite (args pass through: just test --filter=Health)
+just ci                  # run the same checks as CI (Pint + tests) before pushing
+just fix                 # fix code style with Pint
+just artisan …           # run any artisan command, e.g. just artisan make:model Follower
+just composer …          # e.g. just composer require foo/bar
+just npm …               # e.g. just npm install phaser
+just migrate / fresh     # run migrations / rebuild the database and seed
+just logs app            # follow a service's logs
+just shell / tinker / db # shell in the app container / Tinker / psql
+just reset               # stop everything and wipe the database
+```
+
+Tests run against an in-memory SQLite database, so they don't touch your dev data.
 
 ## Branches and pull requests
 
 - Branch names follow `<milestone>/#<issue>-<short-description>`, for example `M0/#2-licence-readme-contributing`.
 - Keep each pull request focused on one issue, and link it in the description with `Closes #<issue>`.
-- Include tests for new behaviour, and make sure the test suite and linting pass. CI runs both on every pull request.
+- Include tests for new behaviour, and make sure the test suite and Pint pass. CI runs both on every pull request.
 - Describe what changed and how you tested it. For anything visual in the game, a screenshot or short clip helps.
 
 ## Review

@@ -1,0 +1,65 @@
+name: CI
+
+on:
+    pull_request:
+    push:
+        branches: [main]
+
+concurrency:
+    group: ci-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    lint:
+        name: Lint (Pint)
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v5
+
+            - uses: shivammathur/setup-php@v2
+              with:
+                  php-version: '8.5'
+                  tools: composer:v2
+                  coverage: none
+
+            - run: composer install --no-interaction --prefer-dist --no-progress
+
+            - run: vendor/bin/pint --test
+
+    tests:
+        name: Tests (Pest)
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v5
+
+            - uses: shivammathur/setup-php@v2
+              with:
+                  php-version: '8.5'
+                  tools: composer:v2
+                  coverage: none
+
+            - uses: actions/setup-node@v5
+              with:
+                  node-version: 24
+                  cache: npm
+
+            - run: composer install --no-interaction --prefer-dist --no-progress
+
+            - run: npm ci
+
+            - run: npm run build
+
+            - name: Prepare environment
+              run: |
+                  cp .env.example .env
+                  php artisan key:generate
+
+            - run: php artisan test
+
+    docker:
+        name: Docker image builds
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v5
+
+            - run: docker compose build app
