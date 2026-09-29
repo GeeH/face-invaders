@@ -123,6 +123,9 @@ export default class VoteScene extends Phaser.Scene {
         const name = this.add.text(0, -40, option.name.toUpperCase(), neonStyle(colour, 40)).setOrigin(0.5);
         const description = this.add.text(0, 25, option.describe(this.balance), neonStyle(CYAN, 26, { weight: '500' })).setOrigin(0.5);
 
+        // Long names and descriptions shrink to fit rather than spill out.
+        [name, description].forEach((text) => text.setScale(Math.min(1, (CARD_WIDTH - 50) / (text.width - text.padding.left * 2))));
+
         card.add([background, badge, numberText, name, description]);
 
         if (!this.local) {

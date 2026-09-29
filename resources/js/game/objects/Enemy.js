@@ -52,6 +52,13 @@ export default class Enemy extends Phaser.Physics.Arcade.Image {
     }
 
     /**
+     * How far the rock reaches from its centre, for area attacks.
+     */
+    get radius() {
+        return this.body?.halfWidth ?? 0;
+    }
+
+    /**
      * Take damage; returns true if this killed the enemy.
      */
     hit(damage) {
