@@ -10,8 +10,9 @@ default:
 up:
     docker compose up -d --wait
     @echo ""
-    @echo "  App:  http://localhost:8000"
-    @echo "  Vite: http://localhost:5173"
+    @echo "  App:    http://localhost:8000"
+    @echo "  Vite:   http://localhost:5173"
+    @echo "  Reverb: ws://localhost:8080"
 
 # Stop the dev environment
 down:

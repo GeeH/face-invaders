@@ -65,6 +65,11 @@ export default class GameScene extends Phaser.Scene {
         this.events.on('enemy-reached-base', this.damagePlayer, this);
         this.events.once('shutdown', () => this.events.off('enemy-reached-base', this.damagePlayer, this));
 
+        // A test message from `php artisan game:ping`.
+        const ping = ({ message }) => this.banner(message, { colour: CYAN, size: 64 });
+        this.game.events.on('ping', ping);
+        this.events.once('shutdown', () => this.game.events.off('ping', ping));
+
         this.waves = new Waves(balance, {
             spawn: ({ health, speed }) => {
                 const enemy = this.enemies.get();

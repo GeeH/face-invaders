@@ -79,6 +79,15 @@ class User extends Authenticatable
     }
 
     /**
+     * The Reverb channel the streamer's game listens on. It changes with the
+     * play token, so a regenerated URL also cuts off the old channel.
+     */
+    public function gameChannel(): string
+    {
+        return "play.{$this->play_token}";
+    }
+
+    /**
      * Replace the game URL, e.g. if it leaked on stream. The old URL stops working.
      */
     public function regeneratePlayToken(): void
