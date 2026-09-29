@@ -63,6 +63,29 @@ describe('Vote', () => {
         expect(vote.castVote('b', 3)).toBe(false);
     });
 
+    it('mirrors tallies counted elsewhere, and falls back on them when time runs out', () => {
+        const vote = new Vote(options, 1000);
+        vote.useTally({ 1: 2, 3: 5 });
+
+        expect(vote.tally()).toEqual([2, 0, 5]);
+        expect(vote.update(1000)).toBe('max');
+    });
+
+    it('settles on a winner decided elsewhere', () => {
+        const vote = new Vote(options, 1000);
+
+        expect(vote.settle('heal')).toBe('heal');
+        expect(vote.finished).toBe(true);
+        expect(vote.settle('max')).toBe('heal');
+    });
+
+    it('ignores a settled winner that is not an option', () => {
+        const vote = new Vote(options, 1000);
+
+        expect(vote.settle('shield')).toBeNull();
+        expect(vote.finished).toBe(false);
+    });
+
     it('ignores a pick for an option that does not exist', () => {
         const vote = new Vote(options, 1000);
 

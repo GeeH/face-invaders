@@ -14,7 +14,7 @@ const params = new URLSearchParams(window.location.search);
 const debug = params.has('debug');
 
 // ?local-vote lets keys 1–N pick the upgrade (for development and demos);
-// ?vote-seconds=N shortens the voting window while testing.
+// ?vote-seconds=N shortens local votes while testing.
 
 const game = new Phaser.Game({
     type: Phaser.AUTO,
@@ -47,6 +47,8 @@ const game = new Phaser.Game({
 // Live events from Laravel are passed on as game events for whichever scene cares.
 listen(parent.dataset.channel, {
     ping: (payload) => game.events.emit('ping', payload),
+    'vote.tally': (payload) => game.events.emit('vote.tally', payload),
+    'vote.closed': (payload) => game.events.emit('vote.closed', payload),
 });
 
 if (debug) {

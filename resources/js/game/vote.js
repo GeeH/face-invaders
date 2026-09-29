@@ -6,8 +6,10 @@
  * the option with most votes wins; a tie is a random pick among the leaders,
  * and no votes at all is a random pick from every option.
  *
- * Plain JavaScript so it can be tested without Phaser. #24 feeds chat votes
- * into castVote(); the local stub (#18) uses pick() from the keyboard.
+ * Plain JavaScript so it can be tested without Phaser. For chat votes
+ * Laravel does the counting (#23): the game mirrors its tallies with
+ * useTally() and takes its winner with settle(). The local stub (#18) uses
+ * pick() from the keyboard.
  */
 export class Vote {
     constructor(options, durationMs, random = Math.random) {
@@ -15,6 +17,7 @@ export class Vote {
         this.remainingMs = durationMs;
         this.random = random;
         this.ballots = new Map();
+        this.counts = null;
         this.winner = null;
     }
 
@@ -39,10 +42,35 @@ export class Vote {
      * Votes per option, in option order.
      */
     tally() {
+        if (this.counts) {
+            return this.counts;
+        }
+
         const counts = this.options.map(() => 0);
         this.ballots.forEach((index) => counts[index]++);
 
         return counts;
+    }
+
+    /**
+     * Take the tallies from somewhere else (the server's chat vote) instead
+     * of counting ballots here.
+     *
+     * @param {Record<number, number>} counts votes keyed by 1-based option number
+     */
+    useTally(counts) {
+        this.counts = this.options.map((_, i) => Number(counts?.[i + 1] ?? 0));
+    }
+
+    /**
+     * End the vote with a winner decided elsewhere (the server's chat vote).
+     */
+    settle(option) {
+        if (!this.finished && this.options.includes(option)) {
+            this.winner = option;
+        }
+
+        return this.winner;
     }
 
     /**
