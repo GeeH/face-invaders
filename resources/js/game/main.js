@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { HEIGHT, WIDTH } from './config';
+import { listen } from './live';
 import BootScene from './scenes/BootScene';
 import GameScene from './scenes/GameScene';
 import HudScene from './scenes/HudScene';
@@ -40,6 +41,11 @@ const game = new Phaser.Game({
             game.registry.set('voteSeconds', Number(params.get('vote-seconds')) || null);
         },
     },
+});
+
+// Live events from Laravel are passed on as game events for whichever scene cares.
+listen(parent.dataset.channel, {
+    ping: (payload) => game.events.emit('ping', payload),
 });
 
 if (debug) {
