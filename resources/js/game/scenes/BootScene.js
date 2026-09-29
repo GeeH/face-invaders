@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { HEIGHT, WIDTH } from '../config';
-import { preloadSprites } from '../assets';
 import { loadFaces } from '../faces';
+import { CYAN, bakeNeonTextures, loadFonts, neonStyle } from '../neon';
 import { fetchRun } from '../run';
 
 const RETRY_SECONDS = 5;
@@ -15,19 +15,9 @@ export default class BootScene extends Phaser.Scene {
         super('boot');
     }
 
-    preload() {
-        preloadSprites(this);
-    }
-
     create() {
         this.status = this.add
-            .text(WIDTH / 2, HEIGHT - 60, '', {
-                fontFamily: 'system-ui, sans-serif',
-                fontSize: '28px',
-                color: '#ffffff',
-                stroke: '#000000',
-                strokeThickness: 6,
-            })
+            .text(WIDTH / 2, HEIGHT - 60, '', neonStyle(CYAN, 28))
             .setOrigin(0.5);
 
         this.startRun();
@@ -35,6 +25,9 @@ export default class BootScene extends Phaser.Scene {
 
     async startRun() {
         try {
+            await loadFonts();
+            bakeNeonTextures(this);
+
             const run = await fetchRun(this.registry.get('runUrl'));
             this.status.setText('Loading faces…');
             await loadFaces(this, run.faces);

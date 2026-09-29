@@ -8,13 +8,13 @@ import { useCircleBody } from './circleBody';
  */
 export default class Bullet extends Phaser.Physics.Arcade.Image {
     constructor(scene, x, y) {
-        super(scene, x, y, 'bullet');
+        super(scene, x, y, 'neon-bolt');
     }
 
     fire(x, y, rotation) {
         this.enableBody(true, x, y, true, true);
         // Just the glowing tip, so a shot at any angle hits what it looks like it hits.
-        useCircleBody(this, 0.6);
+        useCircleBody(this, 0.5);
         this.setRotation(rotation);
         this.scene.physics.velocityFromRotation(rotation - Math.PI / 2, BULLET_SPEED, this.body.velocity);
     }

@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { HEIGHT, WIDTH } from '../config';
-import { FaceQueue } from '../faces';
+import { FaceQueue, faceKey } from '../faces';
+import { CYAN, GREEN, MAGENTA, RED, YELLOW, boom, explode, neonStyle, toInt } from '../neon';
 import Bullet from '../objects/Bullet';
 import Enemy from '../objects/Enemy';
 import Player from '../objects/Player';
@@ -13,7 +14,10 @@ const BEFORE_VOTE_MS = 1500;
 const AFTER_UPGRADE_MS = 2000;
 
 // How long "Game over" shows before a new run starts.
-const GAME_OVER_MS = 5000;
+const GAME_OVER_MS = 7000;
+
+// How many followers the HUD shows as coming next.
+const QUEUE_LENGTH = 6;
 
 export default class GameScene extends Phaser.Scene {
     constructor() {
@@ -27,6 +31,7 @@ export default class GameScene extends Phaser.Scene {
         this.faces = new FaceQueue(faces);
         this.state = new RunState({ startingHealth: balance.starting_health });
         this.syncHud();
+        this.syncQueue();
 
         if (!this.scene.isActive('hud')) {
             this.scene.launch('hud');
@@ -49,7 +54,8 @@ export default class GameScene extends Phaser.Scene {
             bullet.kill();
 
             if (enemy.hit(balance.bullet_damage)) {
-                this.explode(enemy.x, enemy.y);
+                explode(this, enemy.x, enemy.y, enemy.colour, enemy.scale);
+                this.cameras.main.shake(90, 0.002);
                 this.state.recordKill();
                 this.syncHud();
             }
@@ -63,13 +69,14 @@ export default class GameScene extends Phaser.Scene {
             spawn: ({ health, speed }) => {
                 const enemy = this.enemies.get();
                 enemy?.spawn({ face: this.faces.next(), health, speed });
+                this.syncQueue();
 
                 return Boolean(enemy);
             },
             onStart: (wave) => {
                 this.state.startWave(wave);
                 this.syncHud();
-                this.banner(`Wave ${wave}`);
+                this.banner(`WAVE ${wave}`, { colour: CYAN });
             },
             onCleared: (wave) => {
                 if (this.state.dead) {
@@ -78,7 +85,7 @@ export default class GameScene extends Phaser.Scene {
 
                 this.state.waveCleared();
                 this.syncHud();
-                this.banner(`Wave ${wave} cleared!`);
+                this.banner(`WAVE ${wave}\nCLEARED!`, { colour: GREEN, holdMs: 500 });
                 this.time.delayedCall(BEFORE_VOTE_MS, () => this.startVote());
             },
         });
@@ -115,10 +122,10 @@ export default class GameScene extends Phaser.Scene {
     applyUpgrade(upgrade) {
         applyUpgrade(upgrade, { player: this.player, state: this.state, balance: this.balance });
         this.syncHud();
-        this.banner(`${upgrade.name}\n${upgrade.describe(this.balance)}`);
+        this.banner(`${upgrade.name.toUpperCase()}\n${upgrade.describe(this.balance)}`, { colour: YELLOW, size: 90, holdMs: 700 });
     }
 
-    damagePlayer() {
+    damagePlayer(enemy) {
         if (this.state.dead) {
             return;
         }
@@ -126,10 +133,11 @@ export default class GameScene extends Phaser.Scene {
         const fatal = this.state.takeDamage(1);
         this.syncHud();
         this.player.flash();
-        this.cameras.main.shake(200, 0.006);
+        explode(this, enemy.x, enemy.y, enemy.colour, 1.5);
+        this.cameras.main.shake(250, 0.01);
 
         if (fatal) {
-            this.gameOver();
+            this.gameOver(enemy);
         }
     }
 
@@ -137,20 +145,58 @@ export default class GameScene extends Phaser.Scene {
      * The run is over: show how it went, keep the stats, then start a fresh
      * run from wave 1 via the boot scene so balance and faces are reloaded.
      */
-    gameOver() {
+    gameOver(killer) {
         this.state.end();
         // Kept for saving at the end of the run (#28).
         this.registry.set('lastRunStats', this.state.stats());
 
         this.enemies.getMatching('active', true).forEach((enemy) => {
-            this.explode(enemy.x, enemy.y);
+            explode(this, enemy.x, enemy.y, enemy.colour, enemy.scale);
             enemy.kill();
         });
-        this.explode(this.player.x, this.player.y, 4);
+        explode(this, this.player.x, this.player.y, CYAN, 4);
         this.player.ship.setVisible(false);
+        this.player.flame.setVisible(false);
+        this.cameras.main.shake(600, 0.02);
 
-        this.banner(`Game over\nWave ${this.state.wave} · ${this.state.score.toLocaleString()} pts`, GAME_OVER_MS - 600);
+        this.banner('GAME OVER', { colour: RED, size: 150, holdMs: GAME_OVER_MS - 2500, y: 230 });
+        // The killer's asteroid is back in the pool, so keep what we need of it now.
+        const { face, colour } = killer;
+        this.time.delayedCall(700, () => this.showKiller({ face, colour }));
         this.time.delayedCall(GAME_OVER_MS, () => this.scene.start('boot'));
+    }
+
+    /**
+     * Name and shame the follower whose asteroid landed the final blow.
+     */
+    showKiller({ face, colour }) {
+        const ring = this.add.graphics();
+
+        [[36, 0.06], [20, 0.15], [10, 0.4], [5, 1]].forEach(([width, alpha]) => {
+            ring.lineStyle(width, toInt(colour), alpha).strokeCircle(0, 0, 118);
+        });
+
+        const panel = this.add.container(WIDTH / 2, HEIGHT / 2 + 90, [
+            this.add.text(0, -200, 'KILLED BY', neonStyle(MAGENTA, 44)).setOrigin(0.5),
+            ring,
+            this.add.text(0, 190, face?.name ?? 'A MYSTERY ROCK', neonStyle(colour, 72)).setOrigin(0.5),
+            this.add.text(0, 285, `WAVE ${this.state.wave}  ·  ${this.state.score.toLocaleString()} PTS`, neonStyle(CYAN, 36)).setOrigin(0.5),
+        ]).setDepth(31);
+
+        if (face && this.textures.exists(faceKey(face))) {
+            panel.add(this.add.image(0, 0, faceKey(face)).setDisplaySize(220, 220));
+        }
+
+        explode(this, panel.x, panel.y, colour, 3, 30);
+        this.tweens.add({ targets: panel, alpha: { from: 0, to: 1 }, scale: { from: 0.3, to: 1 }, duration: 500, ease: 'Back.out' });
+        this.tweens.add({ targets: ring, angle: 360, duration: 6000, repeat: -1 });
+    }
+
+    /**
+     * Publish who's coming next for the HUD.
+     */
+    syncQueue() {
+        this.registry.set('queue', this.faces.peek(QUEUE_LENGTH));
     }
 
     /**
@@ -165,44 +211,10 @@ export default class GameScene extends Phaser.Scene {
         });
     }
 
-    explode(x, y, size = 1) {
-        const flash = this.add.image(x, y, 'hit').setDepth(20).setScale(0.6 * size);
-
-        this.tweens.add({
-            targets: flash,
-            scale: 2 * size,
-            alpha: 0,
-            angle: 90,
-            duration: 250,
-            onComplete: () => flash.destroy(),
-        });
-    }
-
     /**
-     * A big message in the middle of the screen that fades away.
+     * A big exploding neon message in the middle of the screen.
      */
-    banner(message, holdMs = 1200, y = HEIGHT / 2 - 200) {
-        const text = this.add
-            .text(WIDTH / 2, y, message, {
-                fontFamily: 'system-ui, sans-serif',
-                fontSize: '80px',
-                fontStyle: 'bold',
-                color: '#ffffff',
-                stroke: '#000000',
-                strokeThickness: 10,
-                align: 'center',
-            })
-            .setOrigin(0.5)
-            .setDepth(30)
-            .setAlpha(0);
-
-        this.tweens.chain({
-            targets: text,
-            tweens: [
-                { alpha: 1, scale: { from: 0.8, to: 1 }, duration: 250, ease: 'Back.out' },
-                { alpha: 0, delay: holdMs, duration: 400 },
-            ],
-            onComplete: () => text.destroy(),
-        });
+    banner(message, options = {}) {
+        boom(this, message, options);
     }
 }

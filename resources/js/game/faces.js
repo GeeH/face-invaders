@@ -92,4 +92,15 @@ export class FaceQueue {
 
         return this.faces[this.index++ % this.faces.length];
     }
+
+    /**
+     * The next few faces to be handed out, without taking them.
+     */
+    peek(count) {
+        if (this.faces.length === 0) {
+            return [];
+        }
+
+        return Array.from({ length: count }, (_, i) => this.faces[(this.index + i) % this.faces.length]);
+    }
 }

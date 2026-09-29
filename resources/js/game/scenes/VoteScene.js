@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { HEIGHT, WIDTH } from '../config';
+import { CYAN, GREEN, MAGENTA, ORANGE, PURPLE, YELLOW, neonRect, neonStyle, toInt } from '../neon';
 import { Vote } from '../vote';
 
 const CARD_WIDTH = 440;
@@ -7,13 +8,8 @@ const CARD_HEIGHT = 250;
 const CARD_GAP = 50;
 const REVEAL_MS = 1400;
 
-const TEXT = {
-    fontFamily: 'system-ui, sans-serif',
-    color: '#ffffff',
-    stroke: '#000000',
-    strokeThickness: 8,
-    align: 'center',
-};
+// Each card gets its own neon colour.
+const CARD_COLOURS = [MAGENTA, GREEN, ORANGE, PURPLE, CYAN];
 
 /**
  * The between-waves upgrade vote: numbered option cards and a countdown.
@@ -39,13 +35,10 @@ export default class VoteScene extends Phaser.Scene {
     create() {
         const local = this.registry.get('localVote');
 
-        this.add.text(WIDTH / 2, 250, 'Choose an upgrade!', { ...TEXT, fontSize: '72px', fontStyle: 'bold' }).setOrigin(0.5);
+        const title = this.add.text(WIDTH / 2, 240, 'CHOOSE AN UPGRADE!', neonStyle(YELLOW, 80)).setOrigin(0.5);
+        this.tweens.add({ targets: title, scale: { from: 1, to: 1.05 }, duration: 500, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
         this.add
-            .text(WIDTH / 2, 330, local ? `Press 1–${this.options.length} to pick` : 'Chat voting is coming soon, picking at random', {
-                ...TEXT,
-                fontSize: '34px',
-                strokeThickness: 6,
-            })
+            .text(WIDTH / 2, 330, local ? `PRESS 1–${this.options.length} TO PICK` : 'CHAT VOTING IS COMING SOON, PICKING AT RANDOM', neonStyle(CYAN, 30, { weight: '700' }))
             .setOrigin(0.5);
 
         const rowWidth = this.options.length * CARD_WIDTH + (this.options.length - 1) * CARD_GAP;
@@ -53,7 +46,7 @@ export default class VoteScene extends Phaser.Scene {
             this.card(WIDTH / 2 - rowWidth / 2 + CARD_WIDTH / 2 + i * (CARD_WIDTH + CARD_GAP), HEIGHT / 2 + 60, i + 1, option),
         );
 
-        this.countdown = this.add.text(WIDTH / 2, HEIGHT / 2 + 240, '', { ...TEXT, fontSize: '40px', fontStyle: 'bold' }).setOrigin(0.5);
+        this.countdown = this.add.text(WIDTH / 2, HEIGHT / 2 + 250, '', neonStyle(MAGENTA, 56)).setOrigin(0.5);
 
         if (local) {
             this.input.keyboard.on('keydown', (event) => {
@@ -77,17 +70,14 @@ export default class VoteScene extends Phaser.Scene {
     }
 
     card(x, y, number, option) {
+        const colour = CARD_COLOURS[(number - 1) % CARD_COLOURS.length];
         const card = this.add.container(x, y);
-        const background = this.add
-            .rectangle(0, 0, CARD_WIDTH, CARD_HEIGHT, 0x111827, 0.88)
-            .setStrokeStyle(6, 0x60a5fa);
+        const background = neonRect(this.add.graphics(), CARD_WIDTH, CARD_HEIGHT, colour);
 
-        const badge = this.add.circle(0, -CARD_HEIGHT / 2, 44, 0x2563eb).setStrokeStyle(6, 0xffffff);
-        const numberText = this.add.text(0, -CARD_HEIGHT / 2, `${number}`, { ...TEXT, fontSize: '54px', fontStyle: 'bold', strokeThickness: 0 }).setOrigin(0.5);
-        const name = this.add.text(0, -10, option.name, { ...TEXT, fontSize: '46px', fontStyle: 'bold', strokeThickness: 0 }).setOrigin(0.5);
-        const description = this.add
-            .text(0, 60, option.describe(this.balance), { ...TEXT, fontSize: '30px', color: '#cbd5e1', strokeThickness: 0 })
-            .setOrigin(0.5);
+        const badge = this.add.circle(0, -CARD_HEIGHT / 2, 44, 0x07020f).setStrokeStyle(5, toInt(colour));
+        const numberText = this.add.text(0, -CARD_HEIGHT / 2, `${number}`, neonStyle(colour, 54)).setOrigin(0.5);
+        const name = this.add.text(0, -10, option.name.toUpperCase(), neonStyle(colour, 40)).setOrigin(0.5);
+        const description = this.add.text(0, 60, option.describe(this.balance), neonStyle(CYAN, 26, { weight: '500' })).setOrigin(0.5);
 
         card.add([background, badge, numberText, name, description]);
         card.option = option;
@@ -106,7 +96,7 @@ export default class VoteScene extends Phaser.Scene {
             const won = card.option === winner;
 
             if (won) {
-                card.background.setStrokeStyle(8, 0xfacc15);
+                neonRect(card.background, CARD_WIDTH, CARD_HEIGHT, YELLOW);
             }
 
             this.tweens.add({ targets: card, scale: won ? 1.12 : 0.9, alpha: won ? 1 : 0.25, duration: 300, ease: 'Back.out' });
