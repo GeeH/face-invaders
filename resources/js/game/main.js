@@ -20,8 +20,8 @@ const game = new Phaser.Game({
     parent,
     width: WIDTH,
     height: HEIGHT,
-    // Transparent so the game sits on top of the stream as an OBS overlay.
-    transparent: true,
+    // Black, like an arcade screen, so the neon glows as it should.
+    backgroundColor: '#000000',
     physics: {
         default: 'arcade',
         arcade: { debug },

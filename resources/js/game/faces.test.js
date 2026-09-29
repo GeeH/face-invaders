@@ -11,6 +11,18 @@ describe('FaceQueue', () => {
     it('returns null when there are no faces', () => {
         expect(new FaceQueue([]).next()).toBeNull();
     });
+
+    it('peeks at who is coming next without taking them', () => {
+        const queue = new FaceQueue([{ id: 'a' }, { id: 'b' }, { id: 'c' }]);
+        queue.next();
+
+        expect(queue.peek(4).map((face) => face.id)).toEqual(['b', 'c', 'a', 'b']);
+        expect(queue.next().id).toBe('b');
+    });
+
+    it('peeks at nothing when there are no faces', () => {
+        expect(new FaceQueue([]).peek(3)).toEqual([]);
+    });
 });
 
 describe('faceKey', () => {
