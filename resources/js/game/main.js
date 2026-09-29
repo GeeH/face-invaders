@@ -37,6 +37,7 @@ const game = new Phaser.Game({
         preBoot: (game) => {
             game.registry.set('streamer', parent.dataset.streamer);
             game.registry.set('runUrl', parent.dataset.runUrl);
+            game.registry.set('voteUrl', parent.dataset.voteUrl);
             game.registry.set('localVote', debug || params.has('local-vote'));
             game.registry.set('voteSeconds', Number(params.get('vote-seconds')) || null);
         },
