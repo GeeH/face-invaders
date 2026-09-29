@@ -5,7 +5,6 @@ import { CYAN, GREEN, MAGENTA, RED, YELLOW, boom, explode, neonStyle, toInt } fr
 import Bullet from '../objects/Bullet';
 import Enemy from '../objects/Enemy';
 import Player from '../objects/Player';
-import { openVote } from '../run';
 import { RunState } from '../state';
 import { applyUpgrade, upgrades } from '../upgrades';
 import { Waves } from '../waves';
@@ -28,7 +27,9 @@ export default class GameScene extends Phaser.Scene {
     create() {
         const { balance, faces, streamer } = this.registry.get('run');
         this.balance = balance;
-        this.voteSeconds = this.registry.get('voteSeconds') ?? streamer.voting_window_seconds;
+        // ?vote-seconds only shortens local votes; chat votes last as long as Laravel's window.
+        const localSeconds = this.registry.get('localVote') && this.registry.get('voteSeconds');
+        this.voteSeconds = localSeconds || streamer.voting_window_seconds;
         this.faces = new FaceQueue(faces);
         this.state = new RunState({ startingHealth: balance.starting_health });
         this.syncHud();
@@ -114,20 +115,10 @@ export default class GameScene extends Phaser.Scene {
      * Between waves: vote on one of a few upgrades, apply it, then start the next wave.
      */
     startVote() {
-        const options = upgrades.draw(this.balance.upgrade_options_per_vote);
-
-        // Open chat's vote too. Until the game follows it over Reverb (#24)
-        // the local vote below still decides; failures just mean no chat vote.
-        if (!this.registry.get('localVote')) {
-            openVote(this.registry.get('voteUrl'), {
-                wave: this.state.wave,
-                options: options.map((upgrade) => ({ id: upgrade.id, name: upgrade.name, description: upgrade.describe(this.balance) })),
-            }).catch((error) => console.error('[face-invaders]', error));
-        }
-
         this.scene.launch('vote', {
-            options,
+            options: upgrades.draw(this.balance.upgrade_options_per_vote),
             balance: this.balance,
+            wave: this.state.wave,
             seconds: this.voteSeconds,
             onDecided: (upgrade) => {
                 this.applyUpgrade(upgrade);
