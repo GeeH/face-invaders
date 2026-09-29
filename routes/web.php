@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\TwitchController;
 use App\Http\Controllers\FollowerSyncController;
 use App\Http\Controllers\PlayController;
+use App\Http\Controllers\VoteController;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'home')->name('home');
@@ -12,6 +13,9 @@ Route::get('/play/{token}', [PlayController::class, 'show'])->name('play');
 Route::get('/play/{token}/run', [PlayController::class, 'run'])
     ->middleware('throttle:game-run')
     ->name('play.run');
+Route::post('/play/{token}/votes', [VoteController::class, 'store'])
+    ->middleware('throttle:game-run')
+    ->name('play.votes');
 
 Route::middleware('guest')->group(function () {
     Route::get('/auth/twitch/redirect', [TwitchController::class, 'redirect'])->name('login');

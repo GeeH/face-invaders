@@ -71,6 +71,16 @@ class User extends Authenticatable
     }
 
     /**
+     * Chat's votes on upgrades between waves.
+     *
+     * @return HasMany<VoteSession, $this>
+     */
+    public function voteSessions(): HasMany
+    {
+        return $this->hasMany(VoteSession::class);
+    }
+
+    /**
      * The streamer's personal game URL, pasted into OBS as a browser source.
      */
     public function playUrl(): string

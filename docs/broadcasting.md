@@ -13,11 +13,17 @@ Events extend `App\Events\Game\GameEvent`. They're broadcast straight away rathe
 | Event | Name | Payload | Status |
 |---|---|---|---|
 | `Ping` | `ping` | `{ message }` | Built. Shows `message` as a banner. |
-| `VoteOpened` | `vote.opened` | `{ id, options: [{ number, key, name, description }], closes_at }` | Planned (#23) |
-| `VoteTallyUpdated` | `vote.tally` | `{ id, tally: { [number]: votes } }` | Planned (#23, #24) |
-| `VoteClosed` | `vote.closed` | `{ id, winner: key }` | Planned (#23) |
+| `VoteOpened` | `vote.opened` | `{ id, options: [{ number, id, name, description }], closes_at }` | Built (#23) |
+| `VoteTallyUpdated` | `vote.tally` | `{ id, tally: { [number]: votes } }` | Built (#23) |
+| `VoteClosed` | `vote.closed` | `{ id, winner, tally }` | Built (#23). `winner` is the upgrade's `id`. |
 
-The vote payloads are the planned shape; #23 can change them when it builds them. Update this table when that happens.
+## Votes
+
+When a wave is cleared, the game `POST`s the drawn upgrades to `/play/{token}/votes`. That opens a `VoteSession` for the streamer's voting window and replaces any vote still open, e.g. after a restart. A queued `CloseVoteSession` job closes it when time runs out. You need the queue worker running for this, and `just up` starts it.
+
+- **One vote per viewer:** voting again changes your vote. Numbers that aren't on offer are ignored.
+- **Winner:** the most votes wins. On a tie, one of the leaders is picked at random. With no votes, any option is picked at random.
+- **Override:** `close(VoteClosedBy::Override, $upgradeId)` picks the winner outright (dashboard, #25). Whichever close happens first wins, so the timer does nothing afterwards.
 
 ## Trying it locally
 

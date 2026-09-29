@@ -14,3 +14,24 @@ export async function fetchRun(url) {
 
     return response.json();
 }
+
+/**
+ * Open chat's vote on the drawn upgrades. Laravel runs the vote and
+ * broadcasts the tally and winner over Reverb.
+ *
+ * @param {{wave: number, options: Array<{id: string, name: string, description: string}>}} vote
+ * @returns {Promise<{id: number, options: Array<{number: number, id: string, name: string, description: string}>, closes_at: string}>}
+ */
+export async function openVote(url, vote) {
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+        body: JSON.stringify(vote),
+    });
+
+    if (!response.ok) {
+        throw new Error(`Could not open the vote: ${response.status}`);
+    }
+
+    return response.json();
+}

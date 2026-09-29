@@ -21,6 +21,6 @@
         @vite('resources/js/game/main.js')
     </head>
     <body>
-        <div id="game" data-streamer="{{ $streamer->display_name }}" data-run-url="{{ route('play.run', $streamer->play_token) }}" data-channel="{{ $streamer->gameChannel() }}"></div>
+        <div id="game" data-streamer="{{ $streamer->display_name }}" data-run-url="{{ route('play.run', $streamer->play_token) }}" data-channel="{{ $streamer->gameChannel() }}" data-vote-url="{{ route('play.votes', $streamer->play_token) }}"></div>
     </body>
 </html>
