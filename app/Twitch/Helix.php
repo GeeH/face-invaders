@@ -28,7 +28,7 @@ class Helix
      */
     public function as(User $user): PendingRequest
     {
-        return Http::baseUrl(self::BASE_URL)
+        return Http::baseUrl(config('services.twitch.helix_url', self::BASE_URL))
             ->withToken($this->tokens->accessTokenFor($user))
             ->withHeaders(['Client-Id' => config('services.twitch.client_id')])
             ->acceptJson()

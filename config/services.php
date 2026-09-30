@@ -33,11 +33,15 @@ return [
         'client_secret' => env('TWITCH_CLIENT_SECRET'),
         'redirect' => env('TWITCH_REDIRECT_URI'),
 
-        // Requested on login so streamers never have to log in again for new features.
+        // Requested on login. Adding one means streamers log in again to grant it.
         'scopes' => [
             'moderator:read:followers', // read the follower list for enemy faces
-            'channel:bot', // let FaceInvadersBot read chat without being a moderator
+            'user:read:chat', // read the streamer's own chat for !vote (#21); read-only, never posts
         ],
+
+        // Overridable to point at the Twitch CLI's mock EventSub server when testing locally.
+        'helix_url' => env('TWITCH_HELIX_URL', 'https://api.twitch.tv/helix'),
+        'eventsub_websocket_url' => env('TWITCH_EVENTSUB_WEBSOCKET_URL', 'wss://eventsub.wss.twitch.tv/ws?keepalive_timeout_seconds=30'),
     ],
 
     'slack' => [

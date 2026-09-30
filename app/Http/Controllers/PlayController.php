@@ -32,6 +32,7 @@ class PlayController extends Controller
     public function run(string $token, FacePool $pool, StockFaces $stock): JsonResponse
     {
         $streamer = $this->streamer($token);
+        $streamer->markGameSeen();
 
         return response()->json([
             'streamer' => [

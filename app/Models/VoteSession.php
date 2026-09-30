@@ -51,6 +51,7 @@ class VoteSession extends Model
     public static function open(User $streamer, int $wave, array $options): self
     {
         $streamer->voteSessions()->open()->each(fn (VoteSession $old) => $old->close(VoteClosedBy::Replaced));
+        $streamer->markGameSeen();
 
         $session = $streamer->voteSessions()->create([
             'wave' => $wave,

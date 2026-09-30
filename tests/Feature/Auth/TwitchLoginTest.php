@@ -42,7 +42,7 @@ it('redirects to Twitch asking for the scopes we need', function () {
     expect($location)
         ->toStartWith('https://id.twitch.tv/oauth2/authorize')
         ->toContain('client_id=test-client-id')
-        ->toContain('scope='.urlencode('moderator:read:followers channel:bot'));
+        ->toContain('scope='.urlencode('moderator:read:followers user:read:chat'));
 });
 
 it('creates a streamer from their Twitch account and logs them in', function () {

@@ -58,6 +58,7 @@ class User extends Authenticatable
             'followers_synced_at' => 'datetime',
             'voting_window_seconds' => 'integer',
             'is_admin' => 'boolean',
+            'game_seen_at' => 'datetime',
         ];
     }
 
@@ -69,6 +70,24 @@ class User extends Authenticatable
     public function followers(): HasMany
     {
         return $this->hasMany(Follower::class);
+    }
+
+    /**
+     * Whether Face Invaders can read this streamer's chat for votes: their
+     * login granted `user:read:chat` and hasn't been revoked. Streamers who
+     * logged in before chat voting need to log in again.
+     */
+    public function canReadChat(): bool
+    {
+        return $this->twitch_refresh_token !== null && in_array('user:read:chat', $this->twitch_scopes ?? [], true);
+    }
+
+    /**
+     * Note that the streamer's game is running, so the chat listener joins their chat.
+     */
+    public function markGameSeen(): void
+    {
+        $this->forceFill(['game_seen_at' => now()])->saveQuietly();
     }
 
     /**
