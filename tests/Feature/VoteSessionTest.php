@@ -171,3 +171,42 @@ it('returns 404 when opening a vote with an unknown token', function () {
     $this->postJson(route('play.votes', 'not-a-real-token'), ['wave' => 1, 'options' => $this->upgrades])
         ->assertNotFound();
 });
+
+it('lets the game pick the winner with the number keys', function () {
+    $session = ($this->openVote)();
+    $session->vote('viewer-a', 1);
+
+    $this->postJson(route('play.votes.pick', [$this->streamer->play_token, $session->id]), ['id' => 'turn-speed'])
+        ->assertOk()
+        ->assertExactJson(['winner' => 'turn-speed']);
+
+    expect($session->refresh()->closed_by)->toBe(VoteClosedBy::Override)
+        ->and($session->winner)->toBe('turn-speed');
+    Event::assertDispatched(VoteClosed::class);
+});
+
+it('keeps the first winner if the vote already closed before the pick', function () {
+    $session = ($this->openVote)();
+    $session->close(VoteClosedBy::Override, 'heal');
+
+    $this->postJson(route('play.votes.pick', [$this->streamer->play_token, $session->id]), ['id' => 'turn-speed'])
+        ->assertOk()
+        ->assertExactJson(['winner' => 'heal']);
+});
+
+it('rejects a pick for an upgrade that is not on offer', function () {
+    $session = ($this->openVote)();
+
+    $this->postJson(route('play.votes.pick', [$this->streamer->play_token, $session->id]), ['id' => 'max-health'])
+        ->assertUnprocessable();
+});
+
+it('only lets a streamer pick in their own votes', function () {
+    $session = ($this->openVote)();
+    $someoneElse = User::factory()->create();
+
+    $this->postJson(route('play.votes.pick', [$someoneElse->play_token, $session->id]), ['id' => 'heal'])
+        ->assertNotFound();
+
+    expect($session->refresh()->isClosed())->toBeFalse();
+});

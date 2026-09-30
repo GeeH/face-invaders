@@ -41,6 +41,8 @@ const game = new Phaser.Game({
             game.registry.set('runUrl', parent.dataset.runUrl);
             game.registry.set('voteUrl', parent.dataset.voteUrl);
             game.registry.set('localVote', debug || params.has('local-vote'));
+            // OBS gives browser sources window.obsstudio. Anywhere else, the number keys pick too.
+            game.registry.set('keyPick', debug || params.has('local-vote') || typeof window.obsstudio === 'undefined');
             game.registry.set('voteSeconds', Number(params.get('vote-seconds')) || null);
             game.registry.set('give', debug || params.has('local-vote') ? parseGive(params.get('give')) : []);
         },

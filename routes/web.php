@@ -16,6 +16,9 @@ Route::get('/play/{token}/run', [PlayController::class, 'run'])
 Route::post('/play/{token}/votes', [VoteController::class, 'store'])
     ->middleware('throttle:game-run')
     ->name('play.votes');
+Route::post('/play/{token}/votes/{session}/pick', [VoteController::class, 'pick'])
+    ->middleware('throttle:game-run')
+    ->name('play.votes.pick');
 
 Route::middleware('guest')->group(function () {
     Route::get('/auth/twitch/redirect', [TwitchController::class, 'redirect'])->name('login');
