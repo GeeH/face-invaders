@@ -3,8 +3,9 @@
 // are no audio files, so every sound can be tweaked right here.
 //
 // Sounds play through Phaser's sound manager, which unlocks audio on the
-// first click or key press (browsers block it until then), mutes with
-// game.sound.mute, and pauses when the tab is hidden.
+// first click or key press (browsers block it until then) and mutes with
+// game.sound.mute. Sound keeps playing when the window loses focus: the
+// game is for watching, often from another window.
 
 // Fewer of the same sound than this many ms apart are dropped, so a
 // multishot fan or a chain reaction doesn't turn into a wall of noise.
@@ -135,6 +136,9 @@ export function initSfx(game, { muted = false } = {}) {
     }
 
     sound = game.sound;
+    // Phaser suspends audio whenever the window loses focus, which silenced
+    // the game as soon as you clicked back into another window.
+    sound.pauseOnBlur = false;
     const ctx = sound.context;
 
     // A compressor keeps many overlapping sounds from clipping.
@@ -162,6 +166,11 @@ export function play(name) {
     }
 
     const ctx = sound.context;
+
+    // Once unlocked, audio can be woken without a click if anything suspended it.
+    if (ctx.state === 'suspended') {
+        ctx.resume();
+    }
 
     if (!throttle.allow(name, ctx.currentTime * 1000)) {
         return;
