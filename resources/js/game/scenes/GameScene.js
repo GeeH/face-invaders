@@ -9,6 +9,7 @@ import Player from '../objects/Player';
 import Blades from '../powers/Blades';
 import Drones from '../powers/Drones';
 import Nova from '../powers/Nova';
+import { play } from '../sfx';
 import { RunState } from '../state';
 import { applyUpgrade, upgrades } from '../upgrades';
 import { Waves } from '../waves';
@@ -84,6 +85,7 @@ export default class GameScene extends Phaser.Scene {
                 this.state.startWave(wave);
                 this.syncHud();
                 this.banner(`WAVE ${wave}`, { colour: CYAN });
+                play('waveStart');
             },
             onCleared: (wave) => {
                 if (this.state.dead) {
@@ -93,6 +95,7 @@ export default class GameScene extends Phaser.Scene {
                 this.state.waveCleared();
                 this.syncHud();
                 this.banner(`WAVE ${wave}\nCLEARED!`, { colour: GREEN, holdMs: 500 });
+                play('waveCleared');
                 this.time.delayedCall(BEFORE_VOTE_MS, () => this.startVote());
             },
         });
@@ -143,6 +146,7 @@ export default class GameScene extends Phaser.Scene {
     applyUpgrade(upgrade) {
         applyUpgrade(upgrade, { player: this.player, state: this.state, arsenal: this.arsenal, balance: this.balance });
         this.syncHud();
+        play('powerUp');
         this.banner(`${upgrade.name.toUpperCase()}\n${upgrade.describe(this.balance)}`, { colour: YELLOW, size: 90, holdMs: 700 });
     }
 
@@ -163,11 +167,14 @@ export default class GameScene extends Phaser.Scene {
 
         if (enemy.hit(damage)) {
             this.killed(enemy);
+        } else {
+            play('hit');
         }
     }
 
     killed(enemy) {
         explode(this, enemy.x, enemy.y, enemy.colour, enemy.scale);
+        play('explode');
         this.cameras.main.shake(90, 0.002);
         this.state.recordKill();
         this.syncHud();
@@ -185,6 +192,7 @@ export default class GameScene extends Phaser.Scene {
         const radius = blastRadius(this.arsenal.explosive);
 
         explode(this, x, y, ORANGE, radius / 60);
+        play('blast');
         this.time.delayedCall(90, () => {
             within({ x, y }, this.enemies.getMatching('active', true), radius).forEach((enemy) => this.hitEnemy(enemy, this.balance.bullet_damage, { arc: false }));
         });
@@ -202,6 +210,7 @@ export default class GameScene extends Phaser.Scene {
         }
 
         const bolt = this.add.graphics().setDepth(18);
+        play('zap');
         let last = from;
 
         targets.forEach((target) => {
@@ -224,6 +233,7 @@ export default class GameScene extends Phaser.Scene {
         const fatal = this.state.takeDamage(1);
         this.syncHud();
         this.player.flash();
+        play('hurt');
         explode(this, enemy.x, enemy.y, enemy.colour, 1.5);
         this.cameras.main.shake(250, 0.01);
 
@@ -237,6 +247,7 @@ export default class GameScene extends Phaser.Scene {
      * run from wave 1 via the boot scene so balance and faces are reloaded.
      */
     gameOver(killer) {
+        play('gameOver');
         this.state.end();
         // Kept for saving at the end of the run (#28).
         this.registry.set('lastRunStats', this.state.stats());

@@ -1,4 +1,5 @@
 import { TUNING, orbit, within } from '../arsenal';
+import { play } from '../sfx';
 
 /**
  * Orbiting blades: throwing stars circling the ship that smash any rock
@@ -26,6 +27,7 @@ export default class Blades {
             within(blade, enemies, TUNING.bladeRadius).forEach((enemy) => {
                 if ((enemy.bladeReadyAt ?? 0) <= time) {
                     enemy.bladeReadyAt = time + TUNING.bladeHitCooldownMs;
+                    play('blade');
                     this.scene.hitEnemy(enemy, this.scene.balance.bullet_damage);
                 }
             });
