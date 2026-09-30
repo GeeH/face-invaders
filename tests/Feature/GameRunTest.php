@@ -1,5 +1,6 @@
 <?php
 
+use App\Game\GameSettings;
 use App\Models\Follower;
 use App\Models\User;
 
@@ -8,27 +9,40 @@ beforeEach(function () {
 });
 
 it('returns the streamer, balance and faces for a run', function () {
-    $this->getJson(route('play.run', $this->streamer->play_token))
+    $response = $this->getJson(route('play.run', $this->streamer->play_token))
         ->assertOk()
         ->assertHeader('Cache-Control', 'no-store, private')
         ->assertJsonPath('streamer', ['name' => 'GeeH', 'voting_window_seconds' => 45])
-        ->assertJsonPath('balance', [
-            'starting_health' => 5,
-            'enemies_per_wave' => 10,
-            'extra_enemies_per_wave' => 2,
-            'enemy_health' => 1,
-            'bullet_damage' => 1,
-            'enemy_speed' => 200,
-            'extra_enemy_speed_per_wave' => 20,
-            'fire_rate' => 1.5,
-            'turn_speed' => 120,
-            'attack_speed_upgrade' => 0.25,
-            'turn_speed_upgrade' => 0.25,
-            'heal_upgrade' => 3,
-            'upgrade_options_per_vote' => 3,
-        ])
         ->assertJsonCount(100, 'faces')
         ->assertJsonStructure(['faces' => [['id', 'name', 'avatar', 'fallback']]]);
+
+    // Key order doesn't matter to the game, so compare loosely.
+    expect($response->json('balance'))->toEqual([
+        'starting_health' => 5,
+        'enemies_per_wave' => 10,
+        'extra_enemies_per_wave' => 2,
+        'enemy_health' => 1,
+        'bullet_damage' => 1,
+        'enemy_speed' => 200,
+        'extra_enemy_speed_per_wave' => 20,
+        'fire_rate' => 1.5,
+        'turn_speed' => 120,
+        'attack_speed_upgrade' => 0.25,
+        'turn_speed_upgrade' => 0.25,
+        'heal_upgrade' => 3,
+        'upgrade_options_per_vote' => 3,
+        'multishot_spread' => 0.14,
+        'blast_radius' => 110,
+        'blast_radius_per_stack' => 35,
+        'chain_range' => 320,
+        'blade_orbit' => 150,
+        'blade_spin' => 3.2,
+        'drone_fire_interval_ms' => 700,
+        'nova_interval_ms' => 6000,
+        'nova_min_interval_ms' => 1800,
+        'nova_radius' => 380,
+        'nova_knockback' => 90,
+    ]);
 });
 
 it('puts followers first, then stock faces', function () {
@@ -47,6 +61,15 @@ it('reads balance at the start of every run', function () {
 
     $this->getJson(route('play.run', $this->streamer->play_token))
         ->assertJsonPath('balance.starting_health', 9);
+});
+
+it('uses the admin\'s balance over the defaults', function () {
+    GameSettings::save(['starting_health' => 12, 'fire_rate' => '2.5']);
+
+    $this->getJson(route('play.run', $this->streamer->play_token))
+        ->assertJsonPath('balance.starting_health', 12)
+        ->assertJsonPath('balance.fire_rate', 2.5)
+        ->assertJsonPath('balance.enemy_speed', 200);
 });
 
 it('sends as many faces as configured', function () {

@@ -2,47 +2,68 @@
 
 namespace App\Game;
 
+use App\Models\BalanceOverride;
+
 /**
- * Global game balance. Read from config for now; the admin balance panel
- * (#27) will store these in the database instead.
+ * Global game balance for a run: each setting's default from config, unless
+ * an admin has changed it in the balance panel (#27). Read at the start of
+ * every run, so changes apply without a redeploy or reloading OBS.
  */
 final readonly class GameSettings
 {
-    public function __construct(
-        public int $startingHealth,
-        public int $enemiesPerWave,
-        public int $extraEnemiesPerWave,
-        public int $enemyHealth,
-        public int $bulletDamage,
-        public int $enemySpeed,
-        public int $extraEnemySpeedPerWave,
-        public float $fireRate,
-        public int $turnSpeed,
-        public float $attackSpeedUpgrade,
-        public float $turnSpeedUpgrade,
-        public int $healUpgrade,
-        public int $upgradeOptionsPerVote,
-    ) {}
+    /**
+     * @param  array<string, int|float>  $values  keyed by Balance value
+     */
+    private function __construct(private array $values) {}
 
     public static function current(): self
     {
-        $balance = config('game.balance');
+        $overrides = BalanceOverride::pluck('value', 'key');
 
-        return new self(
-            startingHealth: $balance['starting_health'],
-            enemiesPerWave: $balance['enemies_per_wave'],
-            extraEnemiesPerWave: $balance['extra_enemies_per_wave'],
-            enemyHealth: $balance['enemy_health'],
-            bulletDamage: $balance['bullet_damage'],
-            enemySpeed: $balance['enemy_speed'],
-            extraEnemySpeedPerWave: $balance['extra_enemy_speed_per_wave'],
-            fireRate: $balance['fire_rate'],
-            turnSpeed: $balance['turn_speed'],
-            attackSpeedUpgrade: $balance['attack_speed_upgrade'],
-            turnSpeedUpgrade: $balance['turn_speed_upgrade'],
-            healUpgrade: $balance['heal_upgrade'],
-            upgradeOptionsPerVote: $balance['upgrade_options_per_vote'],
-        );
+        return new self(collect(Balance::cases())->mapWithKeys(fn (Balance $setting) => [
+            $setting->value => $overrides->has($setting->value) ? $setting->cast($overrides[$setting->value]) : $setting->default(),
+        ])->all());
+    }
+
+    /**
+     * Save the admin's values. Only settings that differ from their default
+     * are stored, so a changed default in config still reaches the rest.
+     *
+     * @param  array<string, int|float|string>  $values  keyed by Balance value
+     */
+    public static function save(array $values): void
+    {
+        foreach (Balance::cases() as $setting) {
+            if (! array_key_exists($setting->value, $values)) {
+                continue;
+            }
+
+            $value = $setting->cast($values[$setting->value]);
+
+            if ($value == $setting->default()) {
+                BalanceOverride::whereKey($setting->value)->delete();
+            } else {
+                BalanceOverride::updateOrCreate(['key' => $setting->value], ['value' => $value]);
+            }
+        }
+    }
+
+    /**
+     * Put every setting back to its default.
+     */
+    public static function reset(): void
+    {
+        BalanceOverride::query()->delete();
+    }
+
+    public function get(Balance $setting): int|float
+    {
+        return $this->values[$setting->value];
+    }
+
+    public function isChanged(Balance $setting): bool
+    {
+        return $this->get($setting) != $setting->default();
     }
 
     /**
@@ -50,20 +71,6 @@ final readonly class GameSettings
      */
     public function toArray(): array
     {
-        return [
-            'starting_health' => $this->startingHealth,
-            'enemies_per_wave' => $this->enemiesPerWave,
-            'extra_enemies_per_wave' => $this->extraEnemiesPerWave,
-            'enemy_health' => $this->enemyHealth,
-            'bullet_damage' => $this->bulletDamage,
-            'enemy_speed' => $this->enemySpeed,
-            'extra_enemy_speed_per_wave' => $this->extraEnemySpeedPerWave,
-            'fire_rate' => $this->fireRate,
-            'turn_speed' => $this->turnSpeed,
-            'attack_speed_upgrade' => $this->attackSpeedUpgrade,
-            'turn_speed_upgrade' => $this->turnSpeedUpgrade,
-            'heal_upgrade' => $this->healUpgrade,
-            'upgrade_options_per_vote' => $this->upgradeOptionsPerVote,
-        ];
+        return $this->values;
     }
 }

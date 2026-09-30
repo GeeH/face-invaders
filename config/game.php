@@ -7,12 +7,11 @@ return [
     | Balance
     |--------------------------------------------------------------------------
     |
-    | Global game balance, sent to the game at the start of every run. These
-    | are the defaults until the admin balance panel (#27) stores them in the
-    | database. Speeds are in pixels per second on the 1920×1080 game area.
-    |
-    | Tune freely while developing: changes apply on the next run (after a
-    | death, or a refresh of the game page), no rebuild needed.
+    | Defaults for the global game balance, sent to the game at the start of
+    | every run. Admins can change any of them in the balance panel
+    | (/admin/balance, #27); changed values are stored in the database and
+    | override these. App\Game\Balance lists each setting with its limits.
+    | Speeds are in pixels per second on the 1920×1080 game area.
     |
     */
 
@@ -30,6 +29,19 @@ return [
         'turn_speed_upgrade' => 0.25, // +25% turn speed per upgrade
         'heal_upgrade' => 3,
         'upgrade_options_per_vote' => 3,
+
+        // Wild upgrades (#65)
+        'multishot_spread' => 0.14, // radians between bolts
+        'blast_radius' => 110,
+        'blast_radius_per_stack' => 35,
+        'chain_range' => 320,
+        'blade_orbit' => 150,
+        'blade_spin' => 3.2, // radians per second
+        'drone_fire_interval_ms' => 700,
+        'nova_interval_ms' => 6000,
+        'nova_min_interval_ms' => 1800,
+        'nova_radius' => 380,
+        'nova_knockback' => 90,
     ],
 
     /*

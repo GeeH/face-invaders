@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\BalanceController;
 use App\Http\Controllers\Auth\TwitchController;
 use App\Http\Controllers\FollowerSyncController;
 use App\Http\Controllers\PlayController;
@@ -32,4 +33,10 @@ Route::middleware('auth')->group(function () {
         ->middleware('throttle:follower-sync')
         ->name('followers.sync');
     Route::post('/logout', [TwitchController::class, 'logout'])->name('logout');
+});
+
+Route::middleware(['auth', 'can:admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/balance', [BalanceController::class, 'edit'])->name('balance');
+    Route::put('/balance', [BalanceController::class, 'update'])->name('balance.update');
+    Route::delete('/balance', [BalanceController::class, 'destroy'])->name('balance.reset');
 });
