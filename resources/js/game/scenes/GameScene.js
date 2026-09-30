@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { HEIGHT, WIDTH } from '../config';
-import { Arsenal, blastRadius, chainTargets, within } from '../arsenal';
+import { Arsenal, blastRadius, chainTargets, tune, within } from '../arsenal';
 import { FaceQueue, faceKey } from '../faces';
 import { CYAN, GREEN, MAGENTA, ORANGE, RED, YELLOW, boom, explode, neonStyle, toInt } from '../neon';
 import Bullet from '../objects/Bullet';
@@ -37,6 +37,7 @@ export default class GameScene extends Phaser.Scene {
         this.faces = new FaceQueue(faces);
         this.state = new RunState({ startingHealth: balance.starting_health });
         this.arsenal = new Arsenal();
+        tune(balance);
         this.syncHud();
         this.syncQueue();
 

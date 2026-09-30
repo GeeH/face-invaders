@@ -1,7 +1,7 @@
 // Stacking weapon upgrades (#65). The Arsenal holds how many of each the
 // ship has; the maths lives here as plain functions so it can be tested
-// without Phaser. Tuning is in TUNING until it earns a place in the admin
-// balance panel (#27).
+// without Phaser. TUNING holds fallbacks; tune() loads the admin balance
+// panel's values (#27) at the start of each run.
 
 export const TUNING = {
     // Radians between bolts in a multishot fan.
@@ -27,6 +27,35 @@ export const TUNING = {
     novaRadiusPerStack: 40,
     novaKnockback: 90,
 };
+
+// Which run balance setting drives which TUNING value.
+const FROM_BALANCE = {
+    multishot_spread: 'spread',
+    blast_radius: 'blastRadius',
+    blast_radius_per_stack: 'blastRadiusPerStack',
+    chain_range: 'chainRange',
+    blade_orbit: 'bladeOrbit',
+    blade_spin: 'bladeSpin',
+    drone_fire_interval_ms: 'droneShotMs',
+    nova_interval_ms: 'novaMs',
+    nova_min_interval_ms: 'novaMinMs',
+    nova_radius: 'novaRadius',
+    nova_knockback: 'novaKnockback',
+};
+
+/**
+ * Load the run's balance into TUNING. Settings the balance leaves out keep
+ * their fallback.
+ */
+export function tune(balance, tuning = TUNING) {
+    Object.entries(FROM_BALANCE).forEach(([key, name]) => {
+        if (typeof balance?.[key] === 'number') {
+            tuning[name] = balance[key];
+        }
+    });
+
+    return tuning;
+}
 
 /**
  * How many of each stacking upgrade the ship has this run.

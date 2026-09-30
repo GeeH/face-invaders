@@ -3,10 +3,12 @@
 namespace App\Providers;
 
 use App\Faces\FaceProvider;
+use App\Models\User;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use InvalidArgumentException;
@@ -34,6 +36,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Admins edit the global game balance (#27).
+        Gate::define('admin', fn (User $user) => $user->is_admin);
+
         // Each sync makes one Twitch request per 100 followers, so don't let the button be hammered.
         RateLimiter::for('follower-sync', fn (Request $request) => Limit::perMinute(2)->by($request->user()->id)
             ->response(fn () => back()->with('error', 'You just synced. Try again in a minute.')));

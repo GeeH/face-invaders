@@ -57,6 +57,7 @@ class User extends Authenticatable
             'followers_sync_status' => FollowerSyncStatus::class,
             'followers_synced_at' => 'datetime',
             'voting_window_seconds' => 'integer',
+            'is_admin' => 'boolean',
         ];
     }
 

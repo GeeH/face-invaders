@@ -12,6 +12,9 @@
 
             @auth
                 <div class="flex items-center gap-3">
+                    @can('admin')
+                        <a href="{{ route('admin.balance') }}" class="text-sm text-zinc-400 underline-offset-4 hover:text-zinc-100 hover:underline">Balance</a>
+                    @endcan
                     @if (auth()->user()->avatar_url)
                         <img src="{{ auth()->user()->avatar_url }}" alt="" class="size-8 rounded-full">
                     @endif
@@ -25,6 +28,10 @@
         </header>
 
         <main class="mx-auto max-w-4xl px-4 pb-16">
+            @if (session('status'))
+                <p role="status" class="mb-6 rounded-md border border-emerald-900 bg-emerald-950 px-4 py-3 text-sm text-emerald-200">{{ session('status') }}</p>
+            @endif
+
             @if (session('error'))
                 <p role="alert" class="mb-6 rounded-md border border-red-900 bg-red-950 px-4 py-3 text-sm text-red-200">{{ session('error') }}</p>
             @endif

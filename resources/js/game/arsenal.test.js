@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { TUNING, blastRadius, bounce, chainTargets, novaInterval, orbit, parseGive, spreadAngles, within } from './arsenal';
+import { TUNING, blastRadius, bounce, chainTargets, novaInterval, orbit, parseGive, spreadAngles, tune, within } from './arsenal';
 
 describe('spreadAngles', () => {
     it('fires a single bolt straight ahead', () => {
@@ -94,5 +94,18 @@ describe('parseGive', () => {
     it('is empty without the param and caps silly counts', () => {
         expect(parseGive(null)).toEqual([]);
         expect(parseGive('nova*999')).toHaveLength(20);
+    });
+});
+
+describe('tune', () => {
+    it('loads the admin balance into the tuning', () => {
+        const tuning = tune({ blast_radius: 250, nova_interval_ms: 3000, enemy_speed: 999 }, { ...TUNING });
+
+        expect(tuning).toMatchObject({ blastRadius: 250, novaMs: 3000 });
+        expect(tuning).not.toHaveProperty('enemy_speed');
+    });
+
+    it('keeps the fallback for anything the balance leaves out', () => {
+        expect(tune({}, { ...TUNING })).toEqual(TUNING);
     });
 });

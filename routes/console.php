@@ -25,4 +25,18 @@ Artisan::command('game:ping {user : The ID of the streamer} {message=Hello from 
     $this->info("Sent \"{$message}\" to {$streamer->display_name}'s game.");
 })->purpose("Show a test message in a streamer's game, to check it's connected to Reverb");
 
+Artisan::command('admin:grant {login : The streamer\'s Twitch login} {--revoke : Take admin away instead}', function (string $login) {
+    $user = User::where('twitch_login', $login)->first();
+
+    if (! $user) {
+        $this->error("No streamer has logged in as \"{$login}\" yet.");
+
+        return 1;
+    }
+
+    $user->forceFill(['is_admin' => ! $this->option('revoke')])->save();
+
+    $this->info($user->is_admin ? "{$user->display_name} can now edit the game balance." : "{$user->display_name} is no longer an admin.");
+})->purpose('Let a streamer edit the global game balance (/admin/balance)');
+
 Schedule::command('followers:sync')->everySixHours()->withoutOverlapping();

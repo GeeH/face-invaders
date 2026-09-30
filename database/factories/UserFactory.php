@@ -36,6 +36,14 @@ class UserFactory extends Factory
     /**
      * Indicate that the user's Twitch access token has expired.
      */
+    /**
+     * A streamer who can edit the global game balance.
+     */
+    public function admin(): static
+    {
+        return $this->state(fn (array $attributes) => ['is_admin' => true]);
+    }
+
     public function withExpiredToken(): static
     {
         return $this->state(fn (array $attributes) => [
