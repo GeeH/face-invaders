@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { HEIGHT, WIDTH } from './config';
+import { parseGive } from './arsenal';
 import { listen } from './live';
 import BootScene from './scenes/BootScene';
 import GameScene from './scenes/GameScene';
@@ -15,6 +16,7 @@ const debug = params.has('debug');
 
 // ?local-vote lets keys 1–N pick the upgrade (for development and demos);
 // ?vote-seconds=N shortens local votes while testing.
+// ?give=multishot*3,blades starts every run with those upgrades (with ?local-vote or ?debug).
 
 const game = new Phaser.Game({
     type: Phaser.AUTO,
@@ -40,6 +42,7 @@ const game = new Phaser.Game({
             game.registry.set('voteUrl', parent.dataset.voteUrl);
             game.registry.set('localVote', debug || params.has('local-vote'));
             game.registry.set('voteSeconds', Number(params.get('vote-seconds')) || null);
+            game.registry.set('give', debug || params.has('local-vote') ? parseGive(params.get('give')) : []);
         },
     },
 });

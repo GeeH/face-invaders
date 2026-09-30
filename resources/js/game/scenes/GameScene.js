@@ -1,10 +1,14 @@
 import Phaser from 'phaser';
 import { HEIGHT, WIDTH } from '../config';
+import { Arsenal, blastRadius, chainTargets, within } from '../arsenal';
 import { FaceQueue, faceKey } from '../faces';
-import { CYAN, GREEN, MAGENTA, RED, YELLOW, boom, explode, neonStyle, toInt } from '../neon';
+import { CYAN, GREEN, MAGENTA, ORANGE, RED, YELLOW, boom, explode, neonStyle, toInt } from '../neon';
 import Bullet from '../objects/Bullet';
 import Enemy from '../objects/Enemy';
 import Player from '../objects/Player';
+import Blades from '../powers/Blades';
+import Drones from '../powers/Drones';
+import Nova from '../powers/Nova';
 import { RunState } from '../state';
 import { applyUpgrade, upgrades } from '../upgrades';
 import { Waves } from '../waves';
@@ -32,6 +36,7 @@ export default class GameScene extends Phaser.Scene {
         this.voteSeconds = localSeconds || streamer.voting_window_seconds;
         this.faces = new FaceQueue(faces);
         this.state = new RunState({ startingHealth: balance.starting_health });
+        this.arsenal = new Arsenal();
         this.syncHud();
         this.syncQueue();
 
@@ -39,27 +44,21 @@ export default class GameScene extends Phaser.Scene {
             this.scene.launch('hud');
         }
 
-        this.bullets = this.physics.add.group({ classType: Bullet, maxSize: 60, runChildUpdate: true });
+        // Plenty of bolts, for multishot fans that ricochet around the screen.
+        this.bullets = this.physics.add.group({ classType: Bullet, maxSize: 400, runChildUpdate: true });
         this.enemies = this.physics.add.group({ classType: Enemy, maxSize: 100, runChildUpdate: true });
 
         this.player = new Player(this, WIDTH / 2, HEIGHT / 2, {
             fireRate: balance.fire_rate,
             turnSpeed: balance.turn_speed,
             bullets: this.bullets,
+            arsenal: this.arsenal,
         });
+        this.powers = [new Blades(this, this.player, this.arsenal), new Drones(this, this.player, this.arsenal, this.bullets), new Nova(this, this.player, this.arsenal)];
 
         this.physics.add.overlap(this.bullets, this.enemies, (bullet, enemy) => {
-            if (!bullet.active || !enemy.active) {
-                return;
-            }
-
-            bullet.kill();
-
-            if (enemy.hit(balance.bullet_damage)) {
-                explode(this, enemy.x, enemy.y, enemy.colour, enemy.scale);
-                this.cameras.main.shake(90, 0.002);
-                this.state.recordKill();
-                this.syncHud();
+            if (bullet.active && enemy.active && bullet.strike(enemy)) {
+                this.hitEnemy(enemy, balance.bullet_damage);
             }
         });
 
@@ -97,6 +96,18 @@ export default class GameScene extends Phaser.Scene {
             },
         });
 
+        // Dev only: ?give= starts the run with upgrades already stacked.
+        this.registry.get('give').forEach((id) => {
+            const upgrade = upgrades.get(id);
+
+            if (upgrade) {
+                applyUpgrade(upgrade, { player: this.player, state: this.state, arsenal: this.arsenal, balance: this.balance });
+            } else {
+                console.warn(`[face-invaders] ?give: no upgrade called "${id}"`);
+            }
+        });
+        this.syncHud();
+
         this.waves.start();
     }
 
@@ -108,6 +119,7 @@ export default class GameScene extends Phaser.Scene {
         const enemies = this.enemies.getMatching('active', true);
 
         this.player.update(time, delta, enemies);
+        this.powers.forEach((power) => power.update(time, delta, enemies));
         this.waves.update(delta, enemies.length);
     }
 
@@ -128,9 +140,79 @@ export default class GameScene extends Phaser.Scene {
     }
 
     applyUpgrade(upgrade) {
-        applyUpgrade(upgrade, { player: this.player, state: this.state, balance: this.balance });
+        applyUpgrade(upgrade, { player: this.player, state: this.state, arsenal: this.arsenal, balance: this.balance });
         this.syncHud();
         this.banner(`${upgrade.name.toUpperCase()}\n${upgrade.describe(this.balance)}`, { colour: YELLOW, size: 90, holdMs: 700 });
+    }
+
+    /**
+     * Every way of hurting a rock goes through here, so any hit can arc
+     * chain lightning and any kill can set off an explosion.
+     *
+     * @param {{arc?: boolean}} options arc: false for hits that are themselves lightning
+     */
+    hitEnemy(enemy, damage, { arc = true } = {}) {
+        if (!enemy.active || this.state.dead) {
+            return;
+        }
+
+        if (arc && this.arsenal.chain > 0) {
+            this.lightning(enemy, damage);
+        }
+
+        if (enemy.hit(damage)) {
+            this.killed(enemy);
+        }
+    }
+
+    killed(enemy) {
+        explode(this, enemy.x, enemy.y, enemy.colour, enemy.scale);
+        this.cameras.main.shake(90, 0.002);
+        this.state.recordKill();
+        this.syncHud();
+
+        if (this.arsenal.explosive > 0) {
+            this.blast(enemy.x, enemy.y);
+        }
+    }
+
+    /**
+     * Explosive rounds: a kill bursts and damages nearby rocks. Each blast
+     * lands a beat later, so chain reactions ripple across the screen.
+     */
+    blast(x, y) {
+        const radius = blastRadius(this.arsenal.explosive);
+
+        explode(this, x, y, ORANGE, radius / 60);
+        this.time.delayedCall(90, () => {
+            within({ x, y }, this.enemies.getMatching('active', true), radius).forEach((enemy) => this.hitEnemy(enemy, this.balance.bullet_damage, { arc: false }));
+        });
+    }
+
+    /**
+     * Chain lightning: a jagged bolt jumps from the struck rock to the next
+     * nearest ones, hurting each.
+     */
+    lightning(from, damage) {
+        const targets = chainTargets(from, this.enemies.getMatching('active', true), this.arsenal.chain);
+
+        if (targets.length === 0) {
+            return;
+        }
+
+        const bolt = this.add.graphics().setDepth(18);
+        let last = from;
+
+        targets.forEach((target) => {
+            [[22, 0.18], [10, 0.55], [4, 1]].forEach(([width, alpha]) => {
+                bolt.lineStyle(width, alpha === 1 ? 0xffffff : toInt(CYAN), alpha);
+                bolt.strokePoints(jagged(last, target), false);
+            });
+            last = target;
+        });
+
+        this.tweens.add({ targets: bolt, alpha: 0, duration: 220, onComplete: () => bolt.destroy() });
+        targets.forEach((target) => this.hitEnemy(target, damage, { arc: false }));
     }
 
     damagePlayer(enemy) {
@@ -165,6 +247,7 @@ export default class GameScene extends Phaser.Scene {
         explode(this, this.player.x, this.player.y, CYAN, 4);
         this.player.ship.setVisible(false);
         this.player.flame.setVisible(false);
+        this.powers.forEach((power) => power.hide?.());
         this.cameras.main.shake(600, 0.02);
 
         this.banner('GAME OVER', { colour: RED, size: 150, holdMs: GAME_OVER_MS - 2500, y: 230 });
@@ -225,4 +308,25 @@ export default class GameScene extends Phaser.Scene {
     banner(message, options = {}) {
         boom(this, message, options);
     }
+}
+
+/**
+ * A zigzag between two points, for lightning.
+ */
+function jagged(from, to, segments = 7) {
+    const points = [new Phaser.Math.Vector2(from.x, from.y)];
+
+    for (let i = 1; i < segments; i++) {
+        const t = i / segments;
+        points.push(
+            new Phaser.Math.Vector2(
+                from.x + (to.x - from.x) * t + Phaser.Math.Between(-18, 18),
+                from.y + (to.y - from.y) * t + Phaser.Math.Between(-18, 18),
+            ),
+        );
+    }
+
+    points.push(new Phaser.Math.Vector2(to.x, to.y));
+
+    return points;
 }

@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { spreadAngles } from '../arsenal';
 import { aimAt, nearest, shotInterval, turnRate } from '../targeting';
 
 // Only fire once the ship is roughly facing its target.
@@ -13,11 +14,12 @@ const EXHAUST = 32;
  * enemy and fires automatically.
  */
 export default class Player {
-    constructor(scene, x, y, { fireRate, turnSpeed, bullets }) {
+    constructor(scene, x, y, { fireRate, turnSpeed, bullets, arsenal }) {
         this.scene = scene;
         this.x = x;
         this.y = y;
         this.bullets = bullets;
+        this.arsenal = arsenal;
         this.fireRate = fireRate;
         // Degrees per second; upgrades raise it.
         this.turnSpeed = turnSpeed;
@@ -68,15 +70,16 @@ export default class Player {
         this.scene.time.delayedCall(150, () => this.ship.clearTint());
     }
 
+    /**
+     * Fire from the nose: one bolt, or a fan of them with multishot.
+     */
     fire() {
-        const bullet = this.bullets.get();
-
-        if (!bullet) {
-            return; // Pool exhausted; skip this shot.
-        }
-
-        // Spawn at the ship's nose.
         const nose = new Phaser.Math.Vector2(0, -NOSE).rotate(this.ship.rotation);
-        bullet.fire(this.x + nose.x, this.y + nose.y, this.ship.rotation);
+        const { shots, pierce, bounces } = this.arsenal;
+
+        spreadAngles(this.ship.rotation, shots).forEach((rotation) => {
+            // If the pool runs dry, the rest of this volley is skipped.
+            this.bullets.get()?.fire(this.x + nose.x, this.y + nose.y, rotation, { pierce, bounces });
+        });
     }
 }

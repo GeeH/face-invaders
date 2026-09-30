@@ -67,6 +67,18 @@ export function bakeNeonTextures(scene) {
     });
     bake(scene, 'neon-bolt', 30, 84, (ctx) => glow(ctx, GREEN, 5, () => polyline(ctx, [[15, 14], [15, 70]])));
     bake(scene, 'neon-shard', 24, 48, (ctx) => glow(ctx, '#ffffff', 4, () => polyline(ctx, [[12, 12], [12, 36]])));
+    bake(scene, 'neon-drone', 80, 80, (ctx) => ship(ctx, 40, 40, 0.5, GREEN, 3));
+    bake(scene, 'neon-blade', 90, 90, (ctx) => {
+        // A four-pointed throwing star.
+        const star = Array.from({ length: 8 }, (_, i) => {
+            const angle = (i / 8) * Math.PI * 2;
+            const radius = i % 2 === 0 ? 30 : 10;
+
+            return [45 + Math.cos(angle) * radius, 45 + Math.sin(angle) * radius];
+        });
+
+        glow(ctx, MAGENTA, 4, () => polyline(ctx, star, true));
+    });
     bake(scene, 'neon-ring', 160, 160, (ctx) => glow(ctx, '#ffffff', 5, () => ctx.arc(80, 80, 56, 0, Math.PI * 2)));
 
     const random = new Phaser.Math.RandomDataGenerator(['face-invaders']);

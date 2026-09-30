@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { Arsenal } from '../arsenal';
 import { RunState } from '../state';
 import { applyUpgrade, upgrades } from './index';
 import { UpgradeRegistry } from './registry';
@@ -9,22 +10,59 @@ function context() {
     return {
         player: { fireRate: 2, turnSpeed: 100 },
         state: new RunState({ startingHealth: 5 }),
+        arsenal: new Arsenal(),
         balance,
     };
 }
 
-describe('the v1 pool', () => {
+describe('the pool', () => {
     it('registers every upgrade in the definitions folder', () => {
-        expect(upgrades.all().map((upgrade) => upgrade.id)).toEqual(['attack-speed', 'heal', 'max-health', 'turn-speed']);
+        expect(upgrades.all().map((upgrade) => upgrade.id)).toEqual([
+            'attack-speed',
+            'blades',
+            'chain-lightning',
+            'drone',
+            'explosive',
+            'heal',
+            'max-health',
+            'multishot',
+            'nova',
+            'piercing',
+            'ricochet',
+            'turn-speed',
+        ]);
     });
 
-    it('describes each upgrade using the balance', () => {
-        expect(upgrades.all().map((upgrade) => upgrade.describe(balance))).toEqual([
+    it('describes the balance-driven upgrades using the balance', () => {
+        expect(['attack-speed', 'heal', 'max-health', 'turn-speed'].map((id) => upgrades.get(id).describe(balance))).toEqual([
             'Fire 25% faster',
             'Repair 3 lives',
             'One extra life',
             'Turn 50% faster',
         ]);
+    });
+
+    it('keeps every description short enough for a vote card', () => {
+        upgrades.all().forEach((upgrade) => expect(upgrade.describe(balance).length).toBeLessThanOrEqual(30));
+    });
+});
+
+describe('wild upgrades', () => {
+    it.each([
+        ['multishot', 'shots', 1],
+        ['piercing', 'pierce', 0],
+        ['ricochet', 'bounces', 0],
+        ['explosive', 'explosive', 0],
+        ['blades', 'blades', 0],
+        ['chain-lightning', 'chain', 0],
+        ['drone', 'drones', 0],
+        ['nova', 'nova', 0],
+    ])('%s stacks %s by one each time', (id, stat, start) => {
+        const ctx = context();
+        applyUpgrade(upgrades.get(id), ctx);
+        applyUpgrade(upgrades.get(id), ctx);
+
+        expect(ctx.arsenal[stat]).toBe(start + 2);
     });
 });
 
