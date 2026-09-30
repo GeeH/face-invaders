@@ -91,6 +91,14 @@ class User extends Authenticatable
     }
 
     /**
+     * The upgrade vote chat can vote in right now, if any.
+     */
+    public function openVote(): ?VoteSession
+    {
+        return $this->voteSessions()->open()->latest('id')->first();
+    }
+
+    /**
      * Chat's votes on upgrades between waves.
      *
      * @return HasMany<VoteSession, $this>
