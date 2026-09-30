@@ -9,7 +9,7 @@
         <title>{{ config('app.name') }}</title>
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Monoton&family=Orbitron:wght@500;700;900&display=block">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&display=block">
         <style>
             html, body, #game { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #000; }
             /* Faint CRT scanlines over the game. */

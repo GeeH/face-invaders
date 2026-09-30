@@ -23,14 +23,17 @@ export const ASTEROIDS = ASTEROID_COLOURS.flatMap((colour, c) =>
 );
 
 export const UI_FONT = '"Orbitron", system-ui, sans-serif';
-export const DISPLAY_FONT = '"Monoton", "Orbitron", system-ui, sans-serif';
+
+// Text is drawn at twice the game's resolution so it stays sharp when the
+// canvas is scaled up on high-DPI screens.
+const TEXT_RESOLUTION = 2;
 
 /**
  * Wait for the Google fonts, so no text is baked with a fallback font. Gives
  * up after a few seconds rather than keep OBS on a blank screen when offline.
  */
 export function loadFonts() {
-    const fonts = ['40px Monoton', '500 40px Orbitron', '700 40px Orbitron', '900 40px Orbitron'].map((font) => document.fonts.load(font));
+    const fonts = ['500 40px Orbitron', '700 40px Orbitron', '900 40px Orbitron'].map((font) => document.fonts.load(font));
 
     return Promise.race([Promise.all(fonts), new Promise((resolve) => setTimeout(resolve, 3000))]).catch(() => {});
 }
@@ -51,8 +54,31 @@ export function neonStyle(colour, size, { font = UI_FONT, weight = '900', align 
         stroke: colour,
         strokeThickness: Math.max(2, size * 0.06),
         align,
+        resolution: TEXT_RESOLUTION,
         padding: { x: blur, y: blur },
         shadow: { offsetX: 0, offsetY: 0, color: colour, blur, stroke: true, fill: true },
+    };
+}
+
+/**
+ * Text style for big banners: a dark fill inside a bright neon outline,
+ * with the glow on the outline only. A glowing pale fill (and the stripey
+ * Monoton font) read as blurry, especially scaled down in OBS (#72).
+ */
+export function bannerStyle(colour, size) {
+    const glow = Math.min(22, size * 0.16);
+
+    return {
+        fontFamily: UI_FONT,
+        fontSize: `${size}px`,
+        fontStyle: '900',
+        color: mix(colour, '#000000', 0.72),
+        stroke: mix(colour, '#ffffff', 0.25),
+        strokeThickness: Math.max(3, size * 0.07),
+        align: 'center',
+        resolution: TEXT_RESOLUTION,
+        padding: { x: glow, y: glow },
+        shadow: { offsetX: 0, offsetY: 0, color: colour, blur: glow, stroke: true, fill: false },
     };
 }
 
@@ -149,7 +175,7 @@ export function explode(scene, x, y, colour, size = 1, depth = 20) {
  * Over-the-top banner text: each letter slams in, glitches while it holds,
  * then the whole thing blows apart. Lines after the first are smaller.
  */
-export function boom(scene, message, { colour = MAGENTA, size = 110, holdMs = 1200, y, depth = 30, font = DISPLAY_FONT } = {}) {
+export function boom(scene, message, { colour = MAGENTA, size = 110, holdMs = 1200, y, depth = 30 } = {}) {
     const lines = message.split('\n');
     const centreY = y ?? scene.scale.height / 2 - 200;
     const cx = scene.scale.width / 2;
@@ -159,7 +185,7 @@ export function boom(scene, message, { colour = MAGENTA, size = 110, holdMs = 12
 
     let top = centreY - height / 2;
     lines.forEach((line, i) => {
-        const style = i === 0 ? neonStyle(colour, sizes[i], { font }) : neonStyle(CYAN, sizes[i]);
+        const style = bannerStyle(i === 0 ? colour : CYAN, sizes[i]);
         const chars = [...line].map((char) => scene.add.text(0, 0, char, style).setOrigin(0.5).setDepth(depth));
         const blur = style.padding.x;
         const width = chars.reduce((sum, t) => sum + t.width - blur * 2, 0);
