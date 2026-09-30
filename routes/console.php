@@ -1,5 +1,6 @@
 <?php
 
+use App\Chat\ChatListener;
 use App\Events\Game\Ping;
 use App\Models\User;
 use Illuminate\Support\Facades\Artisan;
@@ -24,6 +25,12 @@ Artisan::command('game:ping {user : The ID of the streamer} {message=Hello from 
 
     $this->info("Sent \"{$message}\" to {$streamer->display_name}'s game.");
 })->purpose("Show a test message in a streamer's game, to check it's connected to Reverb");
+
+Artisan::command('chat:listen', function (ChatListener $listener) {
+    $this->info('Listening to chat for streamers with an active game. Ctrl+C to stop.');
+
+    $listener->run(fn (string $line) => $this->line('['.now()->format('H:i:s')."] {$line}"));
+})->purpose('Read active streamers\' chat and count !vote (long-running)');
 
 Artisan::command('admin:grant {login : The streamer\'s Twitch login} {--revoke : Take admin away instead}', function (string $login) {
     $user = User::where('twitch_login', $login)->first();

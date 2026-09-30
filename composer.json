@@ -11,6 +11,7 @@
         "laravel/reverb": "^1.0",
         "laravel/socialite": "^5.31",
         "laravel/tinker": "^3.0",
+        "ratchet/pawl": "^0.4.3",
         "socialiteproviders/twitch": "^5.4"
     },
     "require-dev": {

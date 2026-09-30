@@ -41,6 +41,17 @@ services:
             app:
                 condition: service_healthy
 
+    # Reads active streamers' chat for !vote (#21).
+    chat:
+        image: face-invaders/php
+        command: php artisan chat:listen
+        restart: unless-stopped
+        volumes:
+            - .:/var/www/html
+        depends_on:
+            app:
+                condition: service_healthy
+
     reverb:
         image: face-invaders/php
         command: php artisan reverb:start --host=0.0.0.0 --port=8080

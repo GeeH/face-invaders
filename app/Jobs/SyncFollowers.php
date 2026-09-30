@@ -105,7 +105,7 @@ class SyncFollowers implements ShouldBeUnique, ShouldQueue
             'synced_at' => $syncedAt,
         ])->values()->all();
 
-        // last_active_at is left alone: the bot owns it, not the sync.
+        // last_active_at is left alone: the chat listener owns it, not the sync.
         Follower::upsert(
             $rows,
             uniqueBy: ['user_id', 'provider', 'provider_user_id'],

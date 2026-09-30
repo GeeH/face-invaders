@@ -13,16 +13,15 @@ It's built for the dead time on stream: queueing for a match, waiting to load in
 1. Register on the web app with Twitch.
 2. Copy your personal game URL from the dashboard.
 3. Paste it into OBS as a browser source (1920×1080).
-4. Press the button on the dashboard to send **FaceInvadersBot** into your chat.
 
-The bot only listens for `!vote` commands. It never posts in chat, and it never uses your login. All prompts and results appear in the game.
+That's it: chat can vote with `!vote 1`, `!vote 2` and so on. Face Invaders reads your chat with the read-only permission you grant at login. It only looks for `!vote` and never posts in chat. All prompts and results appear in the game.
 
 ## How it's built
 
 - **Laravel** web app for Twitch login, the streamer dashboard, the global balance panel, and settings and stats.
 - **Phaser** game served at a unique URL per streamer, used as an OBS browser source.
 - **Laravel Reverb** pushes live vote events and dashboard overrides to the game.
-- **FaceInvadersBot**, one shared Twitch account that reads `!vote` commands in every enabled channel.
+- **A chat listener** (`php artisan chat:listen`) that reads each active streamer's chat through Twitch EventSub and counts `!vote` commands.
 
 The full design, including gameplay, upgrades, voting, configuration and v1 scope, is in the [Game Design Document](docs/Face%20Invaders%20%E2%80%94%20Game%20Design%20Document%20(v1).md).
 

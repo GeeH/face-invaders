@@ -8,7 +8,7 @@ Face Invaders is a stationary auto-shooter that a stream's chat can play without
 
 **The hook:** between waves the game offers a choice of upgrades, and chat picks one by voting with a command like `!vote 1`. The streamer can play along or leave it running while they queue for a match or wait to load into a raid. For viewers, it beats staring at a loading screen.
 
-**How a streamer uses it:** register on the web app with Twitch, copy a personal game URL from the dashboard, paste it into OBS as a browser source, and press a button to send the Face Invaders bot into their chat.
+**How a streamer uses it:** register on the web app with Twitch, copy a personal game URL from the dashboard, and paste it into OBS as a browser source. Chat voting works straight away: Face Invaders reads their chat with the read-only permission granted at login.
 
 **How it's built:** live on stream with Claude Code, in an open-source repo. Later, viewers will contribute their own upgrades as pull requests.
 
@@ -51,7 +51,7 @@ The ship turns slowly by default, so enemies arriving from opposite sides can sl
 ### Voting flow
 
 1. The wave clears and the game pauses. The options appear on screen, numbered.
-2. "Vote now" appears on screen. The Face Invaders bot only listens and never posts in chat.
+2. "Vote now" appears on screen. Face Invaders only reads chat and never posts in it.
 3. Viewers vote with `!vote 1`, `!vote 2` and so on. Each viewer gets one vote.
 4. The vote closes when the streamer's chosen window runs out, or immediately if the streamer picks an option from their dashboard.
 5. The winning upgrade is shown on screen and applied, and the next wave starts.
@@ -78,21 +78,21 @@ Proving we can pull follower avatars from Twitch and put them on enemies is the 
 - **Active viewers first (first thing after v1):** faces are drawn from a queue that favours recent activity, such as chatting, resubscribing or cheering bits. People watching right now see themselves far more often than followers who aren't there. The weighting gets tuned later.
 - **Everyone else** fills the remaining slots, then stock avatars.
 
-In v1, faces come from followers and then stock avatars. The bot already records when each viewer last chatted, so the priority queue can be added without a data migration.
+In v1, faces come from followers and then stock avatars. The chat listener already records when each viewer last chatted, so the priority queue can be added without a data migration.
 
 ## Tech architecture
 
-A Laravel web app with a Phaser.js game, joined by websockets, with one shared chat bot serving every streamer.
+A Laravel web app with a Phaser.js game, joined by websockets, with a chat listener that reads each streamer's chat.
 
 &#91;embedded content: system architecture · 6 parts\]
 
 - **Laravel app:** registration and login with Twitch, the streamer dashboard, the global balance panel, and the database for settings and stats.
 - **Phaser game:** served at a unique URL per streamer, which they paste into OBS as a browser source. The game area is a fixed 1920×1080 that scales to fit the source, so balance behaves the same at any size, and the background is transparent. It loads its config and faces from Laravel and sends back stats at the end of a run.
 - **Laravel Reverb:** pushes live events to the game, such as vote counts, the result and dashboard overrides.
-- **Face Invaders bot:** one shared Twitch account, **FaceInvadersBot**, that joins a channel when the streamer presses the button. It reads `!vote` commands, tallies them, and never posts in chat; all prompts and results appear in the game. It never uses the streamer's own login.
+- **Chat listener:** a long-running worker that reads each streamer's chat through Twitch EventSub (`channel.chat.message` over a WebSocket), using the streamer's own login with only the read-only `user:read:chat` permission. It connects while a streamer's game is active, counts `!vote` commands into the open vote, and never posts in chat; all prompts and results appear in the game. There's no separate bot account (decided in #20): the listener never posts, so a bot identity would add an account to manage without anything visible to show for it.
 - **Repo:** open source under the MIT licence from day one, built on stream with Claude Code.
 
-Everything is hosted on **Laravel Cloud**: the app, Reverb, and the bot. The bot is a long-running process rather than a web request, so it runs as its own background process with restart handling. Exactly what the bot needs from Twitch to read a channel's chat is researched during the build.
+Everything is hosted on **Laravel Cloud**: the app, Reverb, and the chat listener. The listener is a long-running process rather than a web request, so it runs as its own background process with restart handling. If it ever needs to serve many channels from one connection, Twitch EventSub conduits are the scaling path (see #20).
 
 ## Configuration
 
@@ -130,7 +130,7 @@ v1 is done when a streamer can log in with Twitch, drop the game into OBS, and h
 - [ ] Waves of a configurable size that ramp up each wave, ending when the last enemy is gone
 - [ ] Five health; restart at wave 1 on death
 - [ ] Four upgrades: attack speed, heal, max health, turn speed
-- [ ] Shared bot joins chat from a dashboard button; `!vote N`, one vote per viewer
+- [ ] Chat listener reads each streamer's chat with their own read-only login; `!vote N`, one vote per viewer
 - [ ] Streamer-set voting window and dashboard override; ties and empty votes resolved by random pick
 - [ ] Browser source URL on the dashboard
 - [ ] Global balance panel
@@ -156,3 +156,5 @@ These are deliberately out of v1 but should shape how v1 is structured.
 ## Open questions
 
 None right now. The first round was answered on Sep 27, 2026 and the answers are folded into the sections above.
+
+**Changed on Sep 30, 2026:** the shared FaceInvadersBot account was dropped in favour of reading each streamer's chat with their own read-only login (#20).
