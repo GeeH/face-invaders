@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { HEIGHT, WIDTH } from '../config';
 import { CYAN, GREEN, MAGENTA, ORANGE, PURPLE, YELLOW, neonRect, neonStyle, toInt } from '../neon';
 import { openVote, pickVote } from '../run';
+import { play } from '../sfx';
 import { Vote } from '../vote';
 
 const CARD_WIDTH = 440;
@@ -65,6 +66,9 @@ export default class VoteScene extends Phaser.Scene {
         );
 
         this.countdown = this.add.text(WIDTH / 2, HEIGHT / 2 + 280, '', neonStyle(MAGENTA, 56)).setOrigin(0.5);
+
+        play('voteOpen');
+        this.lastSecond = null;
 
         if (this.keyPick) {
             this.input.keyboard.on('keydown', (event) => this.pick(Number(event.key)));
@@ -130,6 +134,12 @@ export default class VoteScene extends Phaser.Scene {
 
         this.countdown.setText(this.vote.finished ? '' : secondsLeft > 0 ? `${secondsLeft}s` : 'COUNTING VOTES…');
 
+        // Tick through the last few seconds.
+        if (!this.vote.finished && secondsLeft !== this.lastSecond && secondsLeft > 0 && secondsLeft <= 5) {
+            play('tick');
+        }
+        this.lastSecond = secondsLeft;
+
         if (winner && !this.revealed) {
             this.reveal(winner);
         }
@@ -168,6 +178,7 @@ export default class VoteScene extends Phaser.Scene {
      * @param {Record<number, number>} tally votes keyed by option number
      */
     showTally(tally) {
+        play('tick');
         this.vote.useTally(tally);
 
         const counts = this.vote.tally();
@@ -189,6 +200,7 @@ export default class VoteScene extends Phaser.Scene {
      */
     reveal(winner) {
         this.revealed = true;
+        play('reveal');
         this.prompt.setText('');
         this.keyHint?.setText('');
 

@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { HEIGHT, WIDTH } from './config';
 import { parseGive } from './arsenal';
 import { listen } from './live';
+import { initSfx, toggleMute } from './sfx';
 import BootScene from './scenes/BootScene';
 import GameScene from './scenes/GameScene';
 import HudScene from './scenes/HudScene';
@@ -16,6 +17,7 @@ const debug = params.has('debug');
 
 // ?local-vote lets keys 1–N pick the upgrade (for development and demos);
 // ?vote-seconds=N shortens local votes while testing.
+// ?mute starts with sound off; M toggles it (and is remembered in this browser).
 // ?give=multishot*3,blades starts every run with those upgrades (with ?local-vote or ?debug).
 
 const game = new Phaser.Game({
@@ -36,6 +38,7 @@ const game = new Phaser.Game({
     },
     scene: [BootScene, GameScene, HudScene, VoteScene],
     callbacks: {
+        postBoot: (game) => initSfx(game, { muted: params.has('mute') }),
         preBoot: (game) => {
             game.registry.set('streamer', parent.dataset.streamer);
             game.registry.set('runUrl', parent.dataset.runUrl);
@@ -47,6 +50,12 @@ const game = new Phaser.Game({
             game.registry.set('give', debug || params.has('local-vote') ? parseGive(params.get('give')) : []);
         },
     },
+});
+
+window.addEventListener('keydown', (event) => {
+    if (event.key === 'm' || event.key === 'M') {
+        toggleMute();
+    }
 });
 
 // Live events from Laravel are passed on as game events for whichever scene cares.

@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { TUNING, novaInterval, novaRadius, within } from '../arsenal';
 import { YELLOW, toInt } from '../neon';
+import { play } from '../sfx';
 
 const EXPAND_MS = 450;
 
@@ -32,6 +33,7 @@ export default class Nova {
     pulse(enemies) {
         const { scene, player } = this;
         const radius = novaRadius(this.arsenal.nova);
+        play('nova');
 
         // Crisp layered strokes, redrawn as the ring grows (a scaled texture goes soft).
         const ring = scene.add.graphics({ x: player.x, y: player.y }).setDepth(19);

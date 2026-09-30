@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { TUNING, orbit } from '../arsenal';
+import { play } from '../sfx';
 import { aimAt, nearest } from '../targeting';
 
 /**
@@ -39,6 +40,7 @@ export default class Drones {
             if (time >= drone.nextShotAt) {
                 drone.nextShotAt = time + TUNING.droneShotMs;
                 this.bullets.get()?.fire(drone.x, drone.y, drone.rotation, { pierce: this.arsenal.pierce, bounces: this.arsenal.bounces });
+                play('drone');
             }
         });
     }

@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { HEIGHT, WIDTH } from '../config';
 import { faceKey } from '../faces';
 import { CYAN, GREEN, MAGENTA, RED, YELLOW, neonStyle, toInt } from '../neon';
+import { isLocked, isMuted } from '../sfx';
 
 const LIFE_GAP = 4;
 const QUEUE_TOP = 200;
@@ -31,6 +32,11 @@ export default class HudScene extends Phaser.Scene {
         ];
         this.queue = [];
 
+        // Browsers only allow sound after a click or key press.
+        this.soundHint = this.add.text(WIDTH - 30, HEIGHT - 24, '', neonStyle(CYAN, 22, { weight: '700' })).setOrigin(1, 1);
+        this.time.addEvent({ delay: 250, loop: true, callback: () => this.drawSoundHint() });
+        this.drawSoundHint();
+
         this.registry.events.on('changedata', this.refresh, this);
         this.events.once('shutdown', () => this.registry.events.off('changedata', this.refresh, this));
         this.refresh();
@@ -41,6 +47,10 @@ export default class HudScene extends Phaser.Scene {
             loop: true,
             callback: () => this.labels.forEach((label) => label.setAlpha(Math.random() < 0.02 ? 0.4 : 1)),
         });
+    }
+
+    drawSoundHint() {
+        this.soundHint.setText(isLocked() ? 'CLICK FOR SOUND' : isMuted() ? 'SOUND OFF · M' : '');
     }
 
     refresh() {

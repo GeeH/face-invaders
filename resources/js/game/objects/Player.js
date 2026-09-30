@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { spreadAngles } from '../arsenal';
+import { play } from '../sfx';
 import { aimAt, nearest, shotInterval, turnRate, turnTowards } from '../targeting';
 
 // Only fire once the ship is roughly facing its target.
@@ -76,6 +77,7 @@ export default class Player {
     fire() {
         const nose = new Phaser.Math.Vector2(0, -NOSE).rotate(this.ship.rotation);
         const { shots, pierce, bounces } = this.arsenal;
+        play('shot');
 
         spreadAngles(this.ship.rotation, shots).forEach((rotation) => {
             // If the pool runs dry, the rest of this volley is skipped.
