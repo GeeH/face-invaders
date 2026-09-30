@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { spreadAngles } from '../arsenal';
-import { aimAt, nearest, shotInterval, turnRate } from '../targeting';
+import { aimAt, nearest, shotInterval, turnRate, turnTowards } from '../targeting';
 
 // Only fire once the ship is roughly facing its target.
 const AIM_TOLERANCE = 0.2;
@@ -39,7 +39,7 @@ export default class Player {
         }
 
         const wanted = aimAt(this, target);
-        this.ship.rotation = Phaser.Math.Angle.RotateTo(this.ship.rotation, wanted, turnRate(this.turnSpeed) * delta);
+        this.ship.rotation = turnTowards(this.ship.rotation, wanted, turnRate(this.turnSpeed) * delta);
 
         const onTarget = Math.abs(Phaser.Math.Angle.Wrap(wanted - this.ship.rotation)) < AIM_TOLERANCE;
 

@@ -30,6 +30,22 @@ export function aimAt(from, target) {
 }
 
 /**
+ * Turn from `current` towards `target` by at most `maxStep` radians, the
+ * short way round. Angles can be in any range (aimAt's go past π), so the
+ * difference is wrapped first; comparing them raw is what made the ship
+ * snap instead of turning (#70).
+ */
+export function turnTowards(current, target, maxStep) {
+    const difference = Math.atan2(Math.sin(target - current), Math.cos(target - current));
+
+    if (Math.abs(difference) <= maxStep) {
+        return current + difference;
+    }
+
+    return current + Math.sign(difference) * maxStep;
+}
+
+/**
  * Radians per millisecond for a turn speed in degrees per second.
  */
 export function turnRate(degreesPerSecond) {
