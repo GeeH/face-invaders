@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\VoteClosedBy;
 use App\Models\User;
 use App\Models\VoteSession;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 /**
  * The game opens chat's upgrade vote when a wave is cleared. The result
@@ -15,7 +17,7 @@ class VoteController extends Controller
 {
     public function store(Request $request, string $token): JsonResponse
     {
-        $streamer = User::where('play_token', $token)->firstOrFail();
+        $streamer = $this->streamer($token);
 
         $validated = $request->validate([
             'wave' => ['required', 'integer', 'min:1'],
@@ -33,5 +35,26 @@ class VoteController extends Controller
             'options' => $session->options,
             'closes_at' => $session->closes_at->toIso8601String(),
         ], 201);
+    }
+
+    /**
+     * The streamer picked the upgrade in the game (with the number keys,
+     * outside OBS): close chat's vote with that winner, so what's recorded
+     * matches what was applied.
+     */
+    public function pick(Request $request, string $token, int $session): JsonResponse
+    {
+        $session = $this->streamer($token)->voteSessions()->findOrFail($session);
+
+        $validated = $request->validate([
+            'id' => ['required', 'string', Rule::in(array_column($session->options, 'id'))],
+        ]);
+
+        return response()->json(['winner' => $session->close(VoteClosedBy::Override, $validated['id'])]);
+    }
+
+    private function streamer(string $token): User
+    {
+        return User::where('play_token', $token)->firstOrFail();
     }
 }

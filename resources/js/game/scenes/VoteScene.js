@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { HEIGHT, WIDTH } from '../config';
 import { CYAN, GREEN, MAGENTA, ORANGE, PURPLE, YELLOW, neonRect, neonStyle, toInt } from '../neon';
-import { openVote } from '../run';
+import { openVote, pickVote } from '../run';
 import { Vote } from '../vote';
 
 const CARD_WIDTH = 440;
@@ -26,7 +26,9 @@ const CARD_COLOURS = [MAGENTA, GREEN, ORANGE, PURPLE, CYAN];
  * it over Reverb, so chat's `!vote N` decides. If the server can't be
  * reached, or its result never arrives, the game decides from what it has.
  *
- * With ?local-vote (or ?debug) keys 1–N pick straight away instead.
+ * With ?local-vote (or ?debug) keys 1–N pick straight away instead. Outside
+ * OBS they pick during a chat vote too, closing the server's vote with the
+ * same upgrade.
  */
 export default class VoteScene extends Phaser.Scene {
     constructor() {
@@ -39,6 +41,7 @@ export default class VoteScene extends Phaser.Scene {
         this.wave = wave;
         this.onDecided = onDecided;
         this.local = this.registry.get('localVote');
+        this.keyPick = this.registry.get('keyPick');
         this.graceMs = this.local ? 0 : RESULT_GRACE_MS;
         this.vote = new Vote(options, seconds * 1000 + this.graceMs);
         this.sessionId = null;
@@ -52,6 +55,10 @@ export default class VoteScene extends Phaser.Scene {
         const prompt = this.local ? `PRESS 1–${this.options.length} TO PICK` : `TYPE  !vote 1–${this.options.length}  IN CHAT`;
         this.prompt = this.add.text(WIDTH / 2, 290, prompt, neonStyle(this.local ? CYAN : GREEN, this.local ? 30 : 44)).setOrigin(0.5);
 
+        if (this.keyPick && !this.local) {
+            this.keyHint = this.add.text(WIDTH / 2, 345, `OR PRESS 1–${this.options.length} TO PICK`, neonStyle(CYAN, 26)).setOrigin(0.5);
+        }
+
         const rowWidth = this.options.length * CARD_WIDTH + (this.options.length - 1) * CARD_GAP;
         this.cards = this.options.map((option, i) =>
             this.card(WIDTH / 2 - rowWidth / 2 + CARD_WIDTH / 2 + i * (CARD_WIDTH + CARD_GAP), HEIGHT / 2 + 60, i + 1, option),
@@ -59,15 +66,11 @@ export default class VoteScene extends Phaser.Scene {
 
         this.countdown = this.add.text(WIDTH / 2, HEIGHT / 2 + 280, '', neonStyle(MAGENTA, 56)).setOrigin(0.5);
 
-        if (this.local) {
-            this.input.keyboard.on('keydown', (event) => {
-                const choice = Number(event.key);
+        if (this.keyPick) {
+            this.input.keyboard.on('keydown', (event) => this.pick(Number(event.key)));
+        }
 
-                if (Number.isInteger(choice)) {
-                    this.vote.pick(choice);
-                }
-            });
-        } else {
+        if (!this.local) {
             this.followChat();
         }
     }
@@ -95,11 +98,30 @@ export default class VoteScene extends Phaser.Scene {
         })
             .then(({ id }) => {
                 this.sessionId = id;
+
+                // Picked with a key before the server answered: close its vote to match.
+                if (this.vote.finished) {
+                    pickVote(`${this.registry.get('voteUrl')}/${id}/pick`, this.vote.winner.id).catch((error) => console.error('[face-invaders]', error));
+                }
             })
             .catch((error) => {
                 console.error('[face-invaders]', error);
                 this.prompt.setText('CHAT VOTE OFFLINE, PICKING AT RANDOM').setStyle(neonStyle(CYAN, 30));
             });
+    }
+
+    /**
+     * The streamer picks option N with the keyboard. During a chat vote the
+     * server's vote is closed with the same upgrade.
+     */
+    pick(choice) {
+        const winner = Number.isInteger(choice) ? this.vote.pick(choice) : null;
+
+        if (!winner || this.sessionId === null) {
+            return;
+        }
+
+        pickVote(`${this.registry.get('voteUrl')}/${this.sessionId}/pick`, winner.id).catch((error) => console.error('[face-invaders]', error));
     }
 
     update(time, delta) {
@@ -168,6 +190,7 @@ export default class VoteScene extends Phaser.Scene {
     reveal(winner) {
         this.revealed = true;
         this.prompt.setText('');
+        this.keyHint?.setText('');
 
         this.cards.forEach((card) => {
             const won = card.option === winner;

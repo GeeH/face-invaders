@@ -35,3 +35,21 @@ export async function openVote(url, vote) {
 
     return response.json();
 }
+
+/**
+ * The streamer picked with the number keys: close the server's vote with the
+ * same upgrade, so the recorded winner matches what was applied.
+ */
+export async function pickVote(url, id) {
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+    });
+
+    if (!response.ok) {
+        throw new Error(`Could not pick the upgrade: ${response.status}`);
+    }
+
+    return response.json();
+}
