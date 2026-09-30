@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\TwitchController;
 use App\Http\Controllers\FollowerSyncController;
 use App\Http\Controllers\PlayController;
 use App\Http\Controllers\VoteController;
+use App\Http\Controllers\VoteOverrideController;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'home')->name('home');
@@ -20,6 +21,11 @@ Route::post('/play/{token}/votes', [VoteController::class, 'store'])
 Route::post('/play/{token}/votes/{session}/pick', [VoteController::class, 'pick'])
     ->middleware('throttle:game-run')
     ->name('play.votes.pick');
+// Stream Deck buttons: pick option N of the open vote. GET for Stream Deck's built-in Website action.
+Route::match(['get', 'post'], '/play/{token}/pick/{number}', [VoteController::class, 'pickNumber'])
+    ->whereNumber('number')
+    ->middleware('throttle:game-run')
+    ->name('play.pick');
 
 Route::middleware('guest')->group(function () {
     Route::get('/auth/twitch/redirect', [TwitchController::class, 'redirect'])->name('login');
@@ -32,6 +38,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/followers/sync', [FollowerSyncController::class, 'store'])
         ->middleware('throttle:follower-sync')
         ->name('followers.sync');
+    Route::post('/vote/pick', [VoteOverrideController::class, 'store'])->name('vote.pick');
     Route::post('/logout', [TwitchController::class, 'logout'])->name('logout');
 });
 

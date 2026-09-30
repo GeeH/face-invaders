@@ -53,6 +53,30 @@ class VoteController extends Controller
         return response()->json(['winner' => $session->close(VoteClosedBy::Override, $validated['id'])]);
     }
 
+    /**
+     * The streamer picks option N of whatever vote is open, from a secret URL
+     * they can put on a Stream Deck button. GET works too, because Stream
+     * Deck's built-in Website action can only make GET requests.
+     */
+    public function pickNumber(string $token, int $number): JsonResponse
+    {
+        $session = $this->streamer($token)->openVote();
+
+        if (! $session) {
+            return response()->json(['message' => 'No vote is open right now.'], 409);
+        }
+
+        $option = $session->option($number);
+
+        if (! $option) {
+            return response()->json(['message' => "This vote has no option {$number}."], 422);
+        }
+
+        $winner = $session->pick($number);
+
+        return response()->json(['winner' => $winner, 'name' => $session->option($number)['name']]);
+    }
+
     private function streamer(string $token): User
     {
         return User::where('play_token', $token)->firstOrFail();

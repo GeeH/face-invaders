@@ -1,3 +1,5 @@
+import './dashboard-vote';
+
 // While a follower sync is running, poll its status and reload the dashboard once it finishes.
 const followerSync = document.querySelector('[data-follower-sync]');
 

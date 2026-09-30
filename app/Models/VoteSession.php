@@ -134,6 +134,17 @@ class VoteSession extends Model
         return $winner;
     }
 
+    /**
+     * The streamer picks option N themselves (dashboard or Stream Deck),
+     * closing the vote with that winner. Returns the winning upgrade's id.
+     */
+    public function pick(int $number): ?string
+    {
+        $option = $this->option($number) ?? throw new InvalidArgumentException("This vote has no option {$number}.");
+
+        return $this->close(VoteClosedBy::Override, $option['id']);
+    }
+
     public function isClosed(): bool
     {
         return $this->closed_at !== null;
